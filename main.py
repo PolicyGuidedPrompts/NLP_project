@@ -17,16 +17,17 @@ class Environment:
     def step(self, action):
         done = False
         reward = 0
+        generated_answer = None
 
         if action == self.special_action:
             done = True
-            reward = self.evaluate_prompt()
+            reward, generated_answer = self.evaluate_prompt()
         else:
             # Concatenate the selected question and answer to the current prompt
             sampled_question, sampled_answer = self.training_dataset.iloc[action]
             self.question = f"{sampled_question}\n{sampled_answer}\n{self.question}"
 
-        return self.encode_question(self.question), reward, done
+        return self.encode_question(self.question), reward, done, generated_answer
 
     def reset(self):
         # Sample a new question and answer from the training dataset
@@ -57,9 +58,9 @@ class Environment:
         )
         # Compare the generated answer to the correct answer
         if generated_answer == self.answer:
-            return 1
+            return 1, generated_answer
         else:
-            return -1
+            return -1, generated_answer
 
 
 class PolicyNet(nn.Module):
@@ -87,15 +88,20 @@ class Agent:
         fraction_of_steps = min(self.steps_done / self.decay_steps, 1)
         return self.start_epsilon + fraction_of_steps * (self.end_epsilon - self.start_epsilon)
 
-    def get_action(self, state):
+    def get_action(self, state, epsilon_greedy=True):
         self.steps_done += 1
         epsilon = self.get_epsilon()
         state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
         action_probs = self.policy_net(state)
-        if np.random.rand() < epsilon:
-            action = torch.randint(high=action_size, size=(1,))  # Random action
+
+        if epsilon_greedy:
+            if np.random.rand() < epsilon:
+                action = torch.randint(high=action_size, size=(1,))  # Random action
+            else:
+                action = torch.argmax(action_probs)  # Best action
         else:
-            action = torch.argmax(action_probs)  # Best action
+            action = torch.argmax(action_probs)
+
         return action.item()
 
     def train(self, env, epochs, num_episodes_per_update):
@@ -113,6 +119,26 @@ class Agent:
 
             self.optimizer.step()
 
+    def evaluate(self, env, question, answer):
+        env.reset()
+        env.question, env.answer = question + '\n', str(answer)
+        state = env.encode_question(env.question)
+        done = False
+        episode_len = 0
+        reward = 0
+        generated_answer = None
+
+        while not done:
+            episode_len += 1
+            if episode_len > 10:
+                action = 0
+            else:
+                action = self.get_action(state, epsilon_greedy=False)
+            next_state, reward , done, generated_answer = env.step(action)
+            state = next_state
+
+        return env.question, env.answer, reward, generated_answer
+
     def collect_episode(self, env):
         state = env.reset()
         done = False
@@ -127,7 +153,7 @@ class Agent:
                 action = 0
             else:
                 action = self.get_action(state)
-            next_state, reward, done = env.step(action)
+            next_state, reward, done, _ = env.step(action)
             states.append(state)
             actions.append(action)
             rewards.append(reward)
@@ -143,7 +169,7 @@ if __name__ == "__main__":
     dataset = load_dataset("wics/strategy-qa")["test"].to_pandas()[
         ["question", "answer"]
     ]
-    question, answer = dataset.iloc[0]
+
     env = Environment(
         training_dataset=dataset,
     )
@@ -151,10 +177,19 @@ if __name__ == "__main__":
     state_size = 768
     action_size = 2290
 
-    epochs = 2
+    epochs = 1
     episodes_per_update = 10
 
     agent = Agent(state_size, action_size)
     agent.train(env, epochs, episodes_per_update)
+    # TODO - We should save the model
+    successes = 0
+    generated_answers = []
+
+    for i in range(10):
+        question, answer = dataset.iloc[i]
+        env_question, env_answer,reward, generated_answer = agent.evaluate(env, question, answer)
+        generated_answers.append(generated_answer)
+        successes += reward if reward == 1 else 0
 
     print("stop")
