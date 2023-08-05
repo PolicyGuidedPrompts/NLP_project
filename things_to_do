@@ -42,3 +42,5 @@ Make sure actions doesn't repeat in same episode
 Configuration file, make it easy to change from outside
 
 Code to change dynamically if cuda available or not
+
+Add retrievers to the pipeline
