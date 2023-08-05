@@ -40,3 +40,5 @@ Make sure Agent doesn't choose questions that simply returns True all the time w
 Make sure actions doesn't repeat in same episode
 
 Configuration file, make it easy to change from outside
+
+Code to change dynamically if cuda available or not
