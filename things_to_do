@@ -16,3 +16,13 @@ Batching when training the agent (the PolicyNet)
 Make the code way faster
 
 How good is the algorithm compared to simply adding questions+answers by random (I.e check against context learning with no training)
+
+Different datasets + tasks
+
+Dieffernt rewards models
+
+Different models for the agent
+
+Different encoder models
+
+Different LLM models
