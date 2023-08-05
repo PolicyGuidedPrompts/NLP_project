@@ -1,22 +1,9 @@
 import torch
-# import wandb
-# from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, GPT3LMHeadModel
-# from torch.distributions import Categorical
 from datasets import load_dataset
-
 from utils.utils import load_or_download_model, load_or_download_llm_model
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-
-# 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 (llama 2 read acces token)
-
-# Dataset path
-DATA_PATH = "path_to_your_dataset"
-
-
-# Initialize wandb
-# wandb.init(project="NLP-RL")
 
 
 class Environment:
@@ -111,26 +98,18 @@ class Agent:
             action = torch.argmax(action_probs)  # Best action
         return action.item()
 
-    def train(self, env, num_episodes, episodes_per_update):
-        for episode in range(num_episodes):
-            all_states = []
-            all_actions = []
-            all_returns = []
-
-            for _ in range(episodes_per_update):
-                states, actions, rewards = self.collect_episode(env)
-                returns = [sum(rewards[i:]) for i in range(len(rewards))]
-                all_states.extend(states)
-                all_actions.extend(actions)
-                all_returns.extend(returns)
-
+    def train(self, env, epochs, num_episodes_per_update):
+        for _ in range(epochs):
             self.optimizer.zero_grad()
 
-            for s, a, G in zip(all_states, all_actions, all_returns):
-                action_probs = self.policy_net(torch.tensor(s, dtype=torch.float32).unsqueeze(0))
-                log_prob = torch.log(action_probs[0, a])
-                loss = -log_prob * G
-                loss.backward()
+            for _ in range(num_episodes_per_update):
+                states, actions, rewards = self.collect_episode(env)
+                returns = [sum(rewards[i:]) for i in range(len(rewards))]
+
+                for s, a, G in zip(states, actions, returns):
+                    action_probs = self.policy_net(torch.tensor(s, dtype=torch.float32))
+                    loss = -torch.log(action_probs[a]) * G
+                    loss.backward()
 
             self.optimizer.step()
 
@@ -172,10 +151,10 @@ if __name__ == "__main__":
     state_size = 768
     action_size = 2290
 
-    num_episodes = 1000
+    epochs = 2
     episodes_per_update = 10
 
     agent = Agent(state_size, action_size)
-    agent.train(env, num_episodes, episodes_per_update)
+    agent.train(env, epochs, episodes_per_update)
 
     print("stop")
