@@ -4,7 +4,7 @@ import torch
 # from torch.distributions import Categorical
 from datasets import load_dataset
 
-from utils.utils import load_or_download_model
+from utils.utils import load_or_download_model, load_or_download_llm_model
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
@@ -23,6 +23,7 @@ class Environment:
     def __init__(self, training_dataset, special_action=0):
         self.training_dataset = training_dataset  # A list of question+answer pairs
         self.encoder_tokenizer, self.encoder_model = load_or_download_model()
+        self.llm_tokenizer, self.llm_model = load_or_download_llm_model()
         self.special_action = special_action
         self.reset()
 
@@ -41,7 +42,9 @@ class Environment:
         return self.encode_question(self.question), reward, done
 
     def reset(self):
-        self.question, self.answer = self.training_dataset.sample(1).iloc[0]
+        # Sample a new question and answer from the training dataset
+        sample = self.training_dataset.sample(1).iloc[0]
+        self.question, self.answer = sample["question"]+'\n', str(sample["answer"])
         return self.encode_question(self.question)
 
     def render(self):
@@ -59,10 +62,12 @@ class Environment:
         # TODO - maybe need to revisit this one
 
         # Generate an answer from the BERT model for the current prompt
-        inputs = self.encoder_tokenizer(self.question, return_tensors="pt", truncation=True, padding=True)
+        inputs = self.llm_tokenizer.encode(self.question, return_tensors="pt")
         with torch.no_grad():
-            outputs = self.encoder_model(**inputs)
-        generated_answer = self.encoder_tokenizer.decode(outputs[0], skip_special_tokens=True)
+            outputs = self.llm_model.generate(inputs, max_length=150, temperature=0.7)
+        generated_answer = self.llm_tokenizer.decode(
+            outputs[:, inputs.shape[-1]:][0], skip_special_tokens=True
+        )
         # Compare the generated answer to the correct answer
         if generated_answer == self.answer:
             return 1
@@ -94,7 +99,6 @@ class Agent:
     def get_epsilon(self):
         fraction_of_steps = min(self.steps_done / self.decay_steps, 1)
         return self.start_epsilon + fraction_of_steps * (self.end_epsilon - self.start_epsilon)
-
 
     def get_action(self, state):
         self.steps_done += 1
@@ -136,9 +140,14 @@ class Agent:
         states = []
         actions = []
         rewards = []
+        episode_len = 0  # TODO - remove this
 
         while not done:
-            action = self.get_action(state)
+            episode_len += 1  # TODO - remove this
+            if episode_len > 10:
+                action = 0
+            else:
+                action = self.get_action(state)
             next_state, reward, done = env.step(action)
             states.append(state)
             actions.append(action)
@@ -146,7 +155,6 @@ class Agent:
             state = next_state
 
         return states, actions, rewards
-
 
 
 if __name__ == "__main__":

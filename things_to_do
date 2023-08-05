@@ -12,3 +12,7 @@ Currently out Agent doesn't keep track of the original question.
 We might want an agent that keep the original question and only add the new information to it.
 
 Batching when training the agent (the PolicyNet)
+
+Make the code way faster
+
+How good is the algorithm compared to simply adding questions+answers by random (I.e check against context learning with no training)
