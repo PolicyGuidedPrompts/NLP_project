@@ -31,4 +31,4 @@ Split train test
 
 Hyperparameter tuning
 
-Different policy search algorithms (e.g. REINFORCE, Vanilla Policy Gradient, PPO, DQN, A2C, etc.)
+Different policy search algorithms (e.g. REINFORCE, Vanilla Policy Gradient + BaseLine, PPO, DQN, A2C, etc.)
