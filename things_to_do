@@ -1,1 +1,14 @@
 When prompt too long, must choose special action
+
+caching dir of torch and hugginface
+
+discount factor for punishing the agent for taking too long
+
+do not repeat the same action
+
+Maybe try Experience Replay
+
+Currently out Agent doesn't keep track of the original question.
+We might want an agent that keep the original question and only add the new information to it.
+
+Batching when training the agent (the PolicyNet)
