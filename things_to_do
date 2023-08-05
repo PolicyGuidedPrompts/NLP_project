@@ -31,3 +31,4 @@ Split train test
 
 Hyperparameter tuning
 
+Different policy search algorithms (e.g. REINFORCE, PPO, DQN, A2C, etc.)
