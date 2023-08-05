@@ -1,6 +1,6 @@
 When prompt too long, must choose special action
 
-caching dir of torch and hugginface
+caching dir of torch and HuggingFace
 
 discount factor for punishing the agent for taking too long
 
@@ -19,7 +19,7 @@ How good is the algorithm compared to simply adding questions+answers by random 
 
 Different datasets + tasks
 
-Dieffernt rewards models
+Different rewards models
 
 Different models for the agent
 
