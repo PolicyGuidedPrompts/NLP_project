@@ -44,3 +44,5 @@ Configuration file, make it easy to change from outside
 Code to change dynamically if cuda available or not
 
 Add retrievers to the pipeline
+
+Add description and not only the question to the prompt
