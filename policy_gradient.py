@@ -1,7 +1,9 @@
 import numpy as np
 import torch
-import gym
 import os
+
+import gym
+from gym.spaces import Discrete
 from general import get_logger, Progbar, export_plot
 from baseline_network import BaselineNetwork
 from network_utils import build_mlp, device, np2torch
@@ -31,6 +33,7 @@ class PolicyGradient(object):
             os.makedirs(config.output_path)
 
         # store hyperparameters
+        # TODO - move seed to config
         self.config = config
         self.seed = seed
 
@@ -41,7 +44,8 @@ class PolicyGradient(object):
         self.env.seed(self.seed)
 
         # discrete vs continuous action space
-        self.discrete = isinstance(env.action_space, gym.spaces.Discrete)
+        self.discrete = isinstance(env.action_space, Discrete)
+        # TODO - should fix things here for continuous action space
         self.observation_dim = self.env.observation_space.shape[0]
         self.action_dim = (
             self.env.action_space.n if self.discrete else self.env.action_space.shape[0]
@@ -146,10 +150,13 @@ class PolicyGradient(object):
             states, actions, rewards = [], [], []
             episode_reward = 0
 
+            # TODO - thing if I can generate a batch of episodes at once
             for step in range(self.config.max_ep_len):
                 states.append(state)
                 action = self.policy.act(states[-1][None])[0]
-                state, reward, done, info = env.step(action)
+                # TODO - remove this finalize option
+                # TODO - info is actually the generated answer
+                state, reward, done, info = env.step(action, finalize=(step == self.config.max_ep_len - 1))
                 actions.append(action)
                 rewards.append(reward)
                 episode_reward += reward
@@ -313,11 +320,13 @@ class PolicyGradient(object):
         for t in range(self.config.num_batches):
 
             # collect a minibatch of samples
-            paths, total_rewards = self.sample_path(self.env)
+            # TODO - currently num_episodes=10 until figure out a way to parallel sampling path
+            paths, total_rewards = self.sample_path(self.env, num_episodes=10)
             all_total_rewards.extend(total_rewards)
             observations = np.concatenate([path["observation"] for path in paths])
             actions = np.concatenate([path["action"] for path in paths])
-            rewards = np.concatenate([path["reward"] for path in paths])
+            # TODO - maybe remove this
+            # rewards = np.concatenate([path["reward"] for path in paths])
             # compute Q-val estimates (discounted future returns) for each time step
             returns = self.get_returns(paths)
 
@@ -384,6 +393,7 @@ class PolicyGradient(object):
         self.evaluate(env, 1)
 
     def run(self):
+        # TODO think of removing record option
         """
         Apply procedures of training for a PG.
         """

@@ -47,4 +47,13 @@ Add retrievers to the pipeline
 
 Add description and not only the question to the prompt
 
-REINFORCE + Baseline
+Think about adding 4 last prompts as part of the state
+
+Think about all the places where there are torch no grad etc.. make sure not to use them when not needed
+
+Log prompts that get into the model
+Log generated answers
+
+Missing our epsilon greedy method
+
+UNDERSTAND WHY MODEL STOPPED PREDICTING TRUE/FALSE ANSWERS

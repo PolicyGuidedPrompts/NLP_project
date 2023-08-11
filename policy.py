@@ -41,7 +41,11 @@ class BasePolicy:
         https://pytorch.org/docs/stable/distributions.html
         """
         # Convert observations to torch.Tensor
-        observations = np2torch(observations)
+        # TODO - probably need to remove this
+        # observations = np2torch(observations)
+
+        # TODO - can't generate same action more than once
+        # TODO - episode has max_length, last action must be special action
 
         # Get action distribution based on observations
         action_distribution = self.action_distribution(observations)
