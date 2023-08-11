@@ -56,4 +56,10 @@ Log generated answers
 
 Missing our epsilon greedy method
 
+Think how can make model to evaluate on prompts early on
+
+Evaluation Metrics
+
+Change
+
 UNDERSTAND WHY MODEL STOPPED PREDICTING TRUE/FALSE ANSWERS

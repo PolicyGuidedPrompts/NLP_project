@@ -39,5 +39,5 @@ class Config:
 
 def get_config(args):
     config = Config(args.use_baseline, args.ppo, args.seed)
-    # TODO - LLM Model, Retreiever, Keep Track Original Question, Scoring Method, DatasetName, Encoder Model, Hyper Parameters
+    # TODO - LLM Model, Retreiever, Keep Track Original Question, Scoring Method, DatasetName, Encoder Model, Hyper Parameters, Evaluation Metrics
     return config
