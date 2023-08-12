@@ -26,21 +26,23 @@ class Environment(gym.Env):
 
         self.reset()
 
-    # TODO - punish on long episodes
-    def step(self, action, finalize=False):
-        done = False
 
-        if action == self.special_action:
+    # TODO - punish on long episodes
+    # TODO- can make this more readable
+    # TODO - if time permits can remove last question encoding
+    def step(self, action, reached_max_episode_length=False):
+        stop = reached_max_episode_length or action == self.special_action
+        done = False
+        reward = 0
+        generated_answer = None
+
+        if stop:
+            done = True
             reward, generated_answer = self.evaluate_prompt()
         else:
             # Concatenate the selected question and answer to the current prompt
-            sampled_question, sampled_answer = self.training_dataset.iloc[action-1]
+            sampled_question, sampled_answer = self.training_dataset.iloc[action]
             self.question = f"{sampled_question}\n{sampled_answer}\n{self.question}"
-
-            reward, generated_answer = 0, None
-
-        if finalize or action == self.special_action:
-            done = True
 
         return self.encode_question(self.question), reward, done, generated_answer
 
@@ -68,14 +70,14 @@ class Environment(gym.Env):
         # TODO - maybe need to revisit this one
 
         # Generate an answer from the BERT model for the current prompt
-        print(f"Generating answer for prompt:\n{self.question}")
+        print(f"Prompt:\n{self.question}\n")
         inputs = self.llm_tokenizer.encode(self.question, return_tensors="pt")
         with torch.no_grad():
             outputs = self.llm_model.generate(inputs, max_length=150, temperature=0.7)
         generated_answer = self.llm_tokenizer.decode(
             outputs[:, inputs.shape[-1]:][0], skip_special_tokens=True
         )
-        print(f"Generated answer:\n{generated_answer}")
+        print(f"Generated answer:\n{generated_answer}\n")
         # Compare the generated answer to the correct answer
         if generated_answer == self.answer:
             return 1, generated_answer

@@ -65,3 +65,6 @@ Add logging to the code
 Change
 
 UNDERSTAND WHY MODEL STOPPED PREDICTING TRUE/FALSE ANSWERS
+
+
+Add git tag for dd517d9 - stable version without stanford files
