@@ -153,7 +153,7 @@ class PolicyGradient(object):
             # TODO - thing if I can generate a batch of episodes at once
             for step in range(self.config.max_ep_len):
                 states.append(state)
-                action = self.policy.act(states[-1][None])[0]
+                action = self.policy.act(states[-1].unsqueeze(0))[0]
                 # TODO - remove this finalize option
                 # TODO - info is actually the generated answer
                 state, reward, done, info = env.step(action, finalize=(step == self.config.max_ep_len - 1))

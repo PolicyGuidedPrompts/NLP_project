@@ -68,12 +68,14 @@ class Environment(gym.Env):
         # TODO - maybe need to revisit this one
 
         # Generate an answer from the BERT model for the current prompt
+        print(f"Generating answer for prompt:\n{self.question}")
         inputs = self.llm_tokenizer.encode(self.question, return_tensors="pt")
         with torch.no_grad():
             outputs = self.llm_model.generate(inputs, max_length=150, temperature=0.7)
         generated_answer = self.llm_tokenizer.decode(
             outputs[:, inputs.shape[-1]:][0], skip_special_tokens=True
         )
+        print(f"Generated answer:\n{generated_answer}")
         # Compare the generated answer to the correct answer
         if generated_answer == self.answer:
             return 1, generated_answer
