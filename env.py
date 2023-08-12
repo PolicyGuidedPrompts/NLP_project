@@ -2,6 +2,12 @@ import torch
 from utils.utils import load_or_download_model, load_or_download_llm_model
 import gym
 from gym.spaces import Discrete, Box
+import openai
+import os
+
+openai.api_key = os.environ.get('OPENAI_API_KEY')
+if not openai.api_key:
+    raise ValueError("Please set the OPENAI_API_KEY environment variable.")
 
 _NUMBER_OF_SPECIAL_ACTIONS = 1
 
@@ -67,17 +73,20 @@ class Environment(gym.Env):
         return outputs.last_hidden_state[0, 0, :]
 
     def evaluate_prompt(self):
-        # TODO - maybe need to revisit this one
-
-        # Generate an answer from the BERT model for the current prompt
+        # Use GPT-3.5-turbo to generate an answer for the current prompt
         print(f"Prompt:\n{self.question}\n")
-        inputs = self.llm_tokenizer.encode(self.question, return_tensors="pt")
-        with torch.no_grad():
-            outputs = self.llm_model.generate(inputs, max_length=250, temperature=0.7)
-        generated_answer = self.llm_tokenizer.decode(
-            outputs[:, inputs.shape[-1]:][0], skip_special_tokens=True
+
+        # Making an API call using the chat endpoint
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": self.question}
+            ]
         )
+
+        generated_answer = response['choices'][0]['message']['content'].strip()
         print(f"Generated answer:\n{generated_answer}\n")
+
         # Compare the generated answer to the correct answer
         if generated_answer == self.answer:
             return 1, generated_answer
