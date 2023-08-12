@@ -82,7 +82,7 @@ class PPO(PolicyGradient):
         for t in range(self.config.num_batches):
 
             # collect a minibatch of samples
-            paths, total_rewards = self.sample_path(self.env)
+            paths, total_rewards = self.sample_paths(self.env)
             all_total_rewards.extend(total_rewards)
             observations = np.concatenate([path["observation"] for path in paths])
             actions = np.concatenate([path["action"] for path in paths])
@@ -128,7 +128,7 @@ class PPO(PolicyGradient):
             self.config.plot_output,
         )
 
-    def sample_path(self, env, num_episodes=None):
+    def sample_paths(self, env, num_episodes=None):
         """
         Sample paths (trajectories) from the environment.
 

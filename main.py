@@ -28,17 +28,23 @@ def set_seeds(seed):
 if __name__ == "__main__":
     args = parser.parse_args()
     set_seeds(args.seed)
+    print("Creating configuration...")
     config = get_config(args)
+    print("Finished configuration...")
 
+    print("Loading dataset...")
     # Load the dataset
     dataset = load_dataset("wics/strategy-qa")["test"].to_pandas()[
         ["question", "answer"]
     ].assign(answer=lambda x: x['answer'].astype(str))
+    print("Finished loading dataset...")
 
+    print("Creating environment...")
     # Define the environment
     env = Environment(
         training_dataset=dataset,
     )
+    print("Finished creating environment...")
 
     # train model
     model = PolicyGradient(env, config, args.seed) if not args.ppo else PPO(env, config, args.seed)

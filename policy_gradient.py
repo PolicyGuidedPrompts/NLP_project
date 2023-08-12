@@ -119,7 +119,7 @@ class PolicyGradient(object):
     def record_summary(self, t):
         pass
 
-    def sample_path(self, env, num_episodes=None):
+    def sample_paths(self, env, num_episodes=None):
         """
         Sample paths (trajectories) from the environment.
 
@@ -184,7 +184,7 @@ class PolicyGradient(object):
         Calculate the returns G_t for each timestep
 
         Args:
-            paths: recorded sample paths. See sample_path() for details.
+            paths: recorded sample paths. See sample_paths() for details.
 
         Return:
             returns: return G_t for each timestep
@@ -321,7 +321,7 @@ class PolicyGradient(object):
 
             # collect a minibatch of samples
             # TODO - currently num_episodes=10 until figure out a way to parallel sampling path
-            paths, total_rewards = self.sample_path(self.env, num_episodes=10)
+            paths, total_rewards = self.sample_paths(self.env, num_episodes=10)
             all_total_rewards.extend(total_rewards)
             observations = np.concatenate([path["observation"] for path in paths])
             actions = np.concatenate([path["action"] for path in paths])
@@ -374,7 +374,7 @@ class PolicyGradient(object):
         """
         if env == None:
             env = self.env
-        paths, rewards = self.sample_path(env, num_episodes)
+        paths, rewards = self.sample_paths(env, num_episodes)
         avg_reward = np.mean(rewards)
         sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
         msg = "Average reward: {:04.2f} +/- {:04.2f}".format(avg_reward, sigma_reward)
@@ -401,7 +401,9 @@ class PolicyGradient(object):
         if self.config.record:
             self.record()
         # model
+        print("Training started...")
         self.train()
+        print("Training finished...")
         # record one game at the end
         if self.config.record:
             self.record()

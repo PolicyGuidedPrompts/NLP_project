@@ -1,6 +1,20 @@
 import os
 from transformers import BertModel, BertTokenizer, AutoTokenizer, GPT2LMHeadModel
 
+import time
+from functools import wraps
+
+
+def time_it(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"{func.__name__} executed in {end - start:.4f} seconds")
+        return result
+    return wrapper
+
 
 def load_or_download_model(model_name='bert-base-uncased', model_dir="./saved_model"):
     model_dir = os.path.abspath(model_dir)

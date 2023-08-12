@@ -20,9 +20,9 @@ class Environment(gym.Env):
 
         # Define observation space based on a sample observation
         sample_observation = self.encode_question("Sample question for shape determination")
-        # TODO - make numpy conversion more elegant
-        self.observation_space = Box(low=-float('inf'), high=float('inf'), shape=sample_observation.shape,
-                                     dtype=sample_observation.numpy().dtype)
+        sample_observation_np = sample_observation.numpy()
+        self.observation_space = Box(low=-float('inf'), high=float('inf'), shape=sample_observation_np.shape,
+                                     dtype=sample_observation_np.dtype)
 
         self.reset()
 
