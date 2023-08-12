@@ -16,6 +16,7 @@ def time_it(func):
     return wrapper
 
 
+# TODO - load model duplicated code
 def load_or_download_model(model_name='bert-base-uncased', model_dir="./saved_model"):
     model_dir = os.path.abspath(model_dir)
 

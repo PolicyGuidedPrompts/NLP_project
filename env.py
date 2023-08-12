@@ -42,7 +42,7 @@ class Environment(gym.Env):
         else:
             # Concatenate the selected question and answer to the current prompt
             sampled_question, sampled_answer = self.training_dataset.iloc[action]
-            self.question = f"{sampled_question}\n{sampled_answer}\n{self.question}"
+            self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
 
         return self.encode_question(self.question), reward, done, generated_answer
 
@@ -52,7 +52,7 @@ class Environment(gym.Env):
     def reset(self):
         # Sample a new question and answer from the training dataset
         sample = self.training_dataset.sample(1).iloc[0]
-        self.question, self.answer = sample["question"] + '\n', sample["answer"]
+        self.question, self.answer = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
         return self.encode_question(self.question)
 
     def render(self):
@@ -73,7 +73,7 @@ class Environment(gym.Env):
         print(f"Prompt:\n{self.question}\n")
         inputs = self.llm_tokenizer.encode(self.question, return_tensors="pt")
         with torch.no_grad():
-            outputs = self.llm_model.generate(inputs, max_length=150, temperature=0.7)
+            outputs = self.llm_model.generate(inputs, max_length=250, temperature=0.7)
         generated_answer = self.llm_tokenizer.decode(
             outputs[:, inputs.shape[-1]:][0], skip_special_tokens=True
         )
