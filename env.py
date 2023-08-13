@@ -103,8 +103,3 @@ class Environment(gym.Env):
             return 1, generated_answer
         else:
             return -1, generated_answer
-
-    # TODO - maybe need to implement this one
-    def close(self):
-        # This method can be used to perform any cleanup when the environment is closed.
-        pass

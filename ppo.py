@@ -68,8 +68,7 @@ class PPO(PolicyGradient):
             all_total_rewards.extend(total_rewards)
             observations = np.concatenate([path["observation"] for path in paths])
             actions = np.concatenate([path["action"] for path in paths])
-            # TODO - maybe remove this
-            # rewards = np.concatenate([path["reward"] for path in paths])
+
             old_logprobs = np.concatenate([path["old_logprobs"] for path in paths])
 
             # compute Q-val estimates (discounted future returns) for each time step

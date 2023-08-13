@@ -96,29 +96,6 @@ class PolicyGradient(object):
     def record_summary(self, t):
         pass
 
-    # TODO - remove this
-    # def collect_episode(self, env):
-    #     state = env.reset()
-    #     done = False
-    #     states = []
-    #     actions = []
-    #     rewards = []
-    #     episode_len = 0  # TODO - remove this
-    #
-    #     while not done:
-    #         episode_len += 1  # TODO - remove this
-    #         if episode_len > 10:
-    #             action = 0
-    #         else:
-    #             action = self.get_action(state)
-    #         next_state, reward, done, _ = env.step(action)
-    #         states.append(state)
-    #         actions.append(action)
-    #         rewards.append(reward)
-    #         state = next_state
-    #
-    #     return states, actions, rewards
-
     def sample_single_episode(self, env):
         state = env.reset()
         states, actions, rewards = [], [], []
@@ -142,7 +119,6 @@ class PolicyGradient(object):
 
     # TODO - rename to sample_episodes
     # TODO - thing if I can generate a batch of episodes at once
-    # TODO - remove this finalize option
     # TODO - info is actually the generated answer
     def sample_paths(self, env, num_episodes=None):
         episode = 0
@@ -251,6 +227,7 @@ class PolicyGradient(object):
         loss.backward()
         self.optimizer.step()
 
+    # TODO - add checkpoint logic and save model every x timestamps
     def train(self):
         last_record = 0
 
@@ -268,8 +245,7 @@ class PolicyGradient(object):
             all_total_rewards.extend(total_rewards)
             observations = np.concatenate([path["observation"] for path in paths])
             actions = np.concatenate([path["action"] for path in paths])
-            # TODO - maybe remove this
-            # rewards = np.concatenate([path["reward"] for path in paths])
+
             # compute Q-val estimates (discounted future returns) for each time step
             returns = self.get_returns(paths)
 

@@ -31,12 +31,7 @@ class BasePolicy:
             sampled_actions: np.array of shape [batch size, *shape of action]
             log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
         """
-        # Convert observations to torch.Tensor
-        # TODO - probably need to remove this
-        # observations = np2torch(observations)
-
         # TODO - can't generate same action more than once
-        # TODO - episode has max_length, last action must be special action
 
         # Get action distribution based on observations
         action_distribution = self.action_distribution(observations)
