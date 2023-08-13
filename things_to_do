@@ -60,12 +60,18 @@ Think how can make model to evaluate on prompts early on
 
 Evaluation Metrics
 
-Add logging to the code
+Add logging to the code with levels
+
+Add wandb
 
 Change
 
 UNDERSTAND WHY MODEL STOPPED PREDICTING TRUE/FALSE ANSWERS
 
 Make configuration defaults, dev/prod if necessary
+
+Make configuration YAML file
+
+Install script for the entire github project
 
 Add git tag for dd517d9 - stable version without stanford files
