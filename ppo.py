@@ -26,18 +26,6 @@ class PPO(PolicyGradient):
                 [batch size] (and integer type) if discrete
             advantages: np.array of shape [batch size, 1]
             old_logprobs: np.array of shape [batch size]
-
-        Perform one update on the policy using the provided data using the PPO clipped
-        objective function.
-
-        To compute the loss value, you will need the log probabilities of the actions
-        given the observations as before. Note that the policy's action_distribution
-        method returns an instance of a subclass of torch.distributions.Distribution,
-        and that object can be used to compute log probabilities.
-
-        Note:
-            - PyTorch optimizers will try to minimize the loss you compute, but you
-            want to maximize the policy's performance.
         """
         observations = np2torch(observations)
         actions = np2torch(actions)
@@ -65,12 +53,6 @@ class PPO(PolicyGradient):
         self.optimizer.step()
 
     def train(self):
-        """
-        Performs training
-
-        You do not have to change or use anything here, but take a look
-        to see how all the code you've written fits together!
-        """
         last_record = 0
 
         self.init_averages()
@@ -143,11 +125,6 @@ class PPO(PolicyGradient):
                 path["actions"] a numpy array of the corresponding actions in the path
                 path["reward"] a numpy array of the corresponding rewards in the path
             total_rewards: the sum of all rewards encountered during this "path"
-
-        You do not have to implement anything in this function, but you will need to
-        understand what it returns, and it is worthwhile to look over the code
-        just so you understand how we are taking actions in the environment
-        and generating batches to train on.
         """
         episode = 0
         episode_rewards = [] 

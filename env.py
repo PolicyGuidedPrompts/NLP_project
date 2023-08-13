@@ -34,13 +34,13 @@ class Environment(gym.Env):
 
         self.reset()
 
-    # TODO - punish on long episodes
-    # TODO- can make this more readable
-    # TODO - if time permits can remove last question encoding
-    def step(self, action):
-        reward = 0
-        generated_answer = None
+    # TODO - not sure should be a part of env class
+    def get_tokenized_length(self, question):
+        tokenized = self.encoder_tokenizer(question, return_tensors="pt", truncation=True, padding=True)
+        return tokenized['input_ids'].shape[1]
 
+    # TODO - punish on long episodes
+    def step(self, action):
         if action == self.special_action:
             done = True
         else:
@@ -48,11 +48,14 @@ class Environment(gym.Env):
             sampled_question, sampled_answer = self.training_dataset.iloc[action]
             self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
             # TODO - MAX_BUFFER will be determined by the model
-            tokenized = self.encoder_tokenizer(self.question, return_tensors="pt", truncation=True, padding=True)
-            done = tokenized['input_ids'].shape[1] > MAX_BUFFER
+            done = self.get_tokenized_length(self.question) > MAX_BUFFER
 
         if done:
             reward, generated_answer = self.evaluate_prompt()
+        else:
+            reward = 0
+            generated_answer = None
+
         return self.encode_question(self.question), reward, done, generated_answer
 
     def seed(self, seed):

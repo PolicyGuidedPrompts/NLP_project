@@ -23,10 +23,6 @@ class PolicyGradient(object):
                 env: an OpenAI Gym environment
                 config: class with hyperparameters
                 logger: logger instance from the logging module
-
-        You do not need to implement anything in this function. However,
-        you will need to use self.discrete, self.observation_dim,
-        self.action_dim, and self.lr in other methods.
         """
         # directory for training outputs
         if not os.path.exists(config.output_path):
@@ -59,21 +55,6 @@ class PolicyGradient(object):
             self.baseline_network = BaselineNetwork(env, config)
 
     def init_policy(self):
-        """
-        Please do the following:
-        1. Create a network using build_mlp. It should map vectors of size
-           self.observation_dim to vectors of size self.action_dim, and use
-           the number of layers and layer size from self.config
-        2. If self.discrete = True (meaning that the actions are discrete, i.e.
-           from the set {0, 1, ..., N-1} where N is the number of actions),
-           instantiate a CategoricalPolicy.
-           If self.discrete = False (meaning that the actions are continuous,
-           i.e. elements of R^d where d is the dimension), instantiate a
-           GaussianPolicy. Either way, assign the policy to self.policy
-        3. Create an Adam optimizer for the policy, with learning rate self.lr
-           Note that the policy is an instance of (a subclass of) nn.Module, so
-           you can call the parameters() method to get its parameters.
-        """
         # 1. Create a neural network
         self.network = build_mlp(
             input_size=self.observation_dim,
@@ -92,9 +73,6 @@ class PolicyGradient(object):
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
 
     def init_averages(self):
-        """
-        You don't have to change or use anything here.
-        """
         self.avg_reward = 0.0
         self.max_reward = 0.0
         self.std_reward = 0.0
@@ -103,7 +81,6 @@ class PolicyGradient(object):
     def update_averages(self, rewards, scores_eval):
         """
         Update the averages.
-        You don't have to change or use anything here.
 
         Args:
             rewards: deque
@@ -193,19 +170,6 @@ class PolicyGradient(object):
 
         Return:
             returns: return G_t for each timestep
-
-        After acting in the environment, we record the observations, actions, and
-        rewards. To get the advantages that we need for the policy update, we have
-        to convert the rewards into returns, G_t, which are themselves an estimate
-        of Q^π (s_t, a_t):
-
-           G_t = r_t + γ r_{t+1} + γ^2 r_{t+2} + ... + γ^{T-t} r_T
-
-        where T is the last timestep of the episode.
-
-        Note that here we are creating a list of returns for each path
-
-        TODO: compute and return G_t for each timestep. Use self.config.gamma.
         """
 
         all_returns = []
@@ -231,14 +195,6 @@ class PolicyGradient(object):
             advantages: np.array of shape [batch size]
         Returns:
             normalized_advantages: np.array of shape [batch size]
-
-        TODO:
-        Normalize the advantages so that they have a mean of 0 and standard
-        deviation of 1. Put the result in a variable called
-        normalized_advantages (which will be returned).
-
-        Note:
-        This function is called only if self.config.normalize_advantage is True.
         """
         mean_advantage = np.mean(advantages)
         std_advantage = np.std(advantages)
@@ -276,18 +232,6 @@ class PolicyGradient(object):
                 [batch size, dim(action space)] if continuous
                 [batch size] (and integer type) if discrete
             advantages: np.array of shape [batch size]
-
-        Perform one update on the policy using the provided data.
-        To compute the loss, you will need the log probabilities of the actions
-        given the observations. Note that the policy's action_distribution
-        method returns an instance of a subclass of
-        torch.distributions.Distribution, and that object can be used to
-        compute log probabilities.
-        See https://pytorch.org/docs/stable/distributions.html#distribution
-
-        Note:
-        PyTorch optimizers will try to minimize the loss you compute, but you
-        want to maximize the policy's performance.
         """
         observations = np2torch(observations)
         actions = np2torch(actions)
@@ -308,12 +252,6 @@ class PolicyGradient(object):
         self.optimizer.step()
 
     def train(self):
-        """
-        Performs training
-
-        You do not have to change or use anything here, but take a look
-        to see how all the code you've written fits together!
-        """
         last_record = 0
 
         self.init_averages()
@@ -372,11 +310,6 @@ class PolicyGradient(object):
         )
 
     def evaluate(self, env=None, num_episodes=1):
-        """
-        Evaluates the return for num_episodes episodes.
-        Not used right now, all evaluation statistics are computed during training
-        episodes.
-        """
         if env == None:
             env = self.env
         paths, rewards = self.sample_paths(env, num_episodes)
