@@ -72,6 +72,7 @@ class Environment(gym.Env):
         # Use the last hidden state as the question representation
         return outputs.last_hidden_state[0, 0, :]
 
+    # TODO - try running heavier model on colab and slurm
     def evaluate_prompt(self):
         # Use GPT-3.5-turbo to generate an answer for the current prompt
         print(f"Prompt:\n{self.question}\n")
