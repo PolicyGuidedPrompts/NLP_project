@@ -21,6 +21,12 @@ Different datasets + tasks
 
 Different rewards models
 
+Gold truth answer instead of answer
+
+Remove all detach shit
+
+Make sure always works with tensors and moving computations to GPU
+
 Different models for the agent
 
 Different encoder models

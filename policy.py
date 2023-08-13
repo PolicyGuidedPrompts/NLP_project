@@ -23,13 +23,13 @@ class BasePolicy:
         """
         raise NotImplementedError
 
-    def act(self, observations, return_log_prob = False):
+    def act(self, observations, is_ppo = False):
         """
         Args:
-            observations: np.array of shape [batch size, dim(observation space)]
+            observations: torch.Tensor of shape [batch size, dim(observation space)]
         Returns:
-            sampled_actions: np.array of shape [batch size, *shape of action]
-            log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
+            sampled_actions: torch.Tensor of shape [batch size, *shape of action]
+            log_probs: torch.Tensor of shape [batch size] (optionally, if is_ppo)
         """
         # Convert observations to torch.Tensor
         # TODO - probably need to remove this
@@ -44,15 +44,11 @@ class BasePolicy:
         # Sample actions from the distribution
         sampled_actions = action_distribution.sample()
 
-        if return_log_prob:
+        if is_ppo:
             # Calculate log probabilities of the sampled actions
-            log_probs = action_distribution.log_prob(sampled_actions).detach().numpy()
-            sampled_actions = sampled_actions.detach().numpy()
+            log_probs = action_distribution.log_prob(sampled_actions)
 
             return sampled_actions, log_probs
-
-        # Convert sampled actions to numpy array
-        sampled_actions = sampled_actions.detach().numpy()
 
         return sampled_actions
 

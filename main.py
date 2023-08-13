@@ -19,9 +19,9 @@ parser.add_argument("--seed", type=int, default=1)
 parser.set_defaults(use_baseline=True)
 
 
+# TODO - should be able to remove numpy from entire project
 def set_seeds(seed):
     torch.random.manual_seed(seed)
-    np.random.seed(seed)
     random.seed(seed)
 
 

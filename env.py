@@ -27,10 +27,9 @@ class Environment(gym.Env):
         self.action_space = Discrete(len(self.training_dataset) + _NUMBER_OF_SPECIAL_ACTIONS)
 
         # Define observation space based on a sample observation
-        sample_observation = self.encode_question("Sample question for shape determination")
-        sample_observation_np = sample_observation.numpy()
-        self.observation_space = Box(low=-float('inf'), high=float('inf'), shape=sample_observation_np.shape,
-                                     dtype=sample_observation_np.dtype)
+        sample_observation = self.encode_question("Sample question for shape determination").numpy()
+        self.observation_space = Box(low=-float('inf'), high=float('inf'), shape=sample_observation.shape,
+                                     dtype=sample_observation.dtype)
 
         self.reset()
 

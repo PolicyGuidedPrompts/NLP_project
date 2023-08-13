@@ -127,16 +127,16 @@ class PolicyGradient(object):
 
         while not done:
             states.append(state)
-            action = self.policy.act(states[-1].unsqueeze(0))[0]
+            action = self.policy.act(states[-1]).item()
             actions.append(action)
             state, reward, done, _ = env.step(action)
             rewards.append(reward)
             episode_reward += reward
 
         path = {
-            "observation": np.array(states),
-            "reward": np.array(rewards),
-            "action": np.array(actions),
+            "observation": torch.stack(states),
+            "reward": torch.tensor(rewards),
+            "action": torch.tensor(actions),
         }
         return path, episode_reward
 

@@ -140,7 +140,7 @@ class PPO(PolicyGradient):
                 states.append(state)
                 # Note the difference between this line and the corresponding line
                 # in PolicyGradient.
-                action, old_logprob = self.policy.act(states[-1][None], return_log_prob = True)
+                action, old_logprob = self.policy.act(states[-1][None], is_ppo= True)
                 assert old_logprob.shape == (1,)
                 action, old_logprob = action[0], old_logprob[0]
                 state, reward, done, info = env.step(action)
