@@ -150,11 +150,9 @@ class PolicyGradient(object):
 
         while not done:
             states.append(state)
-            # TODO - shorten this name 'reached_max_episode_length'
-            reached_max_episode_length = (len(states) == self.config.max_ep_len)
             action = self.policy.act(states[-1].unsqueeze(0))[0]
             actions.append(action)
-            state, reward, done, _ = env.step(action, reached_max_episode_length=reached_max_episode_length)
+            state, reward, done, _ = env.step(action)
             rewards.append(reward)
             episode_reward += reward
 

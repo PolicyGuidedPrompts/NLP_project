@@ -32,17 +32,14 @@ class Environment(gym.Env):
 
         self.reset()
 
-
     # TODO - punish on long episodes
     # TODO- can make this more readable
     # TODO - if time permits can remove last question encoding
-    def step(self, action, reached_max_episode_length=False):
-        stop = reached_max_episode_length or action == self.special_action
-        done = False
+    def step(self, action):
         reward = 0
         generated_answer = None
 
-        if stop:
+        if action == self.special_action:
             done = True
             reward, generated_answer = self.evaluate_prompt()
         else:
@@ -78,15 +75,19 @@ class Environment(gym.Env):
         print(f"Prompt:\n{self.question}\n")
 
         # Making an API call using the chat endpoint
+        # TODO - model should be configurable
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo-0613",
             messages=[
                 {"role": "user", "content": self.question}
-            ]
+            ],
+            # TODO - 15 for now, remove this later, should be configurable
+            max_tokens=15  # Limit the output to 15 tokens
         )
 
         generated_answer = response['choices'][0]['message']['content'].strip()
         print(f"Generated answer:\n{generated_answer}\n")
+        print(f"Ground truth:\n{self.answer}\n")
 
         # Compare the generated answer to the correct answer
         if generated_answer == self.answer:

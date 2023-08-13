@@ -77,3 +77,6 @@ Install script for the entire github project
 Create Readme
 
 Add git tag for dd517d9 - stable version without stanford files
+
+If time permits, read advanced options:
+https://platform.openai.com/docs/guides/gpt
