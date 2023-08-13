@@ -11,6 +11,8 @@ if not openai.api_key:
 
 _NUMBER_OF_SPECIAL_ACTIONS = 1
 
+MAX_BUFFER = 200
+
 
 class Environment(gym.Env):
     # TODO - training_dataset + llm should be defined from configuration file
@@ -41,12 +43,16 @@ class Environment(gym.Env):
 
         if action == self.special_action:
             done = True
-            reward, generated_answer = self.evaluate_prompt()
         else:
             # Concatenate the selected question and answer to the current prompt
             sampled_question, sampled_answer = self.training_dataset.iloc[action]
             self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
+            # TODO - MAX_BUFFER will be determined by the model
+            tokenized = self.encoder_tokenizer(self.question, return_tensors="pt", truncation=True, padding=True)
+            done = tokenized['input_ids'].shape[1] > MAX_BUFFER
 
+        if done:
+            reward, generated_answer = self.evaluate_prompt()
         return self.encode_question(self.question), reward, done, generated_answer
 
     def seed(self, seed):
