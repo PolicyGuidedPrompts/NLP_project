@@ -15,15 +15,15 @@ class BaselineNetwork(nn.Module):
         self.config = config
         self.env = env
         self.baseline = None
-        self.lr = self.config.learning_rate
+        self.lr = self.config.baseline_learning_rate
         observation_dim = self.env.observation_space.shape[0]
 
         # Create the neural network baseline
         self.network = build_mlp(
             input_size=observation_dim,
             output_size=1,
-            n_layers=self.config.n_layers,
-            size=self.config.layer_size
+            n_layers=self.config.baseline_n_layers,
+            size=self.config.baseline_layer_size
         )
 
         # Define the optimizer for the baseline

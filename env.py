@@ -20,11 +20,23 @@ class Environment(gym.Env):
         super(Environment, self).__init__()
         self.training_dataset = training_dataset
         self.encoder_tokenizer, self.encoder_model = load_or_download_model()
+        # TODO - Deberta tokenizer and model
         self.llm_tokenizer, self.llm_model = load_or_download_llm_model()
         self.special_action = special_action
 
+        # TODO - maybe train encoder as well
+        # TODO - speak with Nachum about Masters partition slurm
+
         # Define action space
         self.action_space = Discrete(len(self.training_dataset) + _NUMBER_OF_SPECIAL_ACTIONS)
+
+        # TODO
+        # Roi suggestion
+        # choosing an action will actually choose a random vector
+        # will then choose the closest vector to that random vector
+
+        # Questions:
+        # Ask about budget
 
         # Define observation space based on a sample observation
         sample_observation = self.encode_question("Sample question for shape determination")
