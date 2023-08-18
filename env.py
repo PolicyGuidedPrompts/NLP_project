@@ -1,66 +1,69 @@
-import torch
-from utils.utils import load_or_download_model, load_or_download_llm_model
-import gym
-from gym.spaces import Discrete, Box
-import openai
 import os
+
+import gym
+import openai
+import torch
+from gym.spaces import Discrete, Box
 
 openai.api_key = os.environ.get('OPENAI_API_KEY')
 if not openai.api_key:
     raise ValueError("Please set the OPENAI_API_KEY environment variable.")
 
-_NUMBER_OF_SPECIAL_ACTIONS = 1
 
-MAX_BUFFER = 200
+# TODO - training_dataset + llm should be defined from configuration file
+# TODO - Deberta tokenizer and model
 
+# TODO - maybe train encoder as well
+# TODO - speak with Nachum about Masters partition slurm
+
+# TODO - add reward metric to config
+# TODO - punish on long episodes
+
+# TODO
+# Roi suggestion
+# choosing an action will actually choose a random vector
+# will then choose the closest vector to that random vector
+
+# Questions:
+# Ask about budget
 
 class Environment(gym.Env):
-    # TODO - training_dataset + llm should be defined from configuration file
-    def __init__(self, training_dataset, special_action=0):
-        super(Environment, self).__init__()
-        self.training_dataset = training_dataset
-        self.encoder_tokenizer, self.encoder_model = load_or_download_model()
-        # TODO - Deberta tokenizer and model
-        self.llm_tokenizer, self.llm_model = load_or_download_llm_model()
-        self.special_action = special_action
 
-        # TODO - maybe train encoder as well
-        # TODO - speak with Nachum about Masters partition slurm
+    def __init__(self, dataset, llm_tokenizer, llm_model, encoder_tokenizer, encoder_model, seed, terminate_action=0):
+        super(Environment, self).__init__()
+        self.dataset = dataset
+        self.encoder_tokenizer = encoder_tokenizer
+        self.encoder_model = encoder_model
+        self.llm_tokenizer = llm_tokenizer
+        self.llm_model = llm_model
+        self.terminate_action = terminate_action
 
         # Define action space
-        self.action_space = Discrete(len(self.training_dataset) + _NUMBER_OF_SPECIAL_ACTIONS)
-
-        # TODO
-        # Roi suggestion
-        # choosing an action will actually choose a random vector
-        # will then choose the closest vector to that random vector
-
-        # Questions:
-        # Ask about budget
+        self.action_space = Discrete(len(self.dataset) + 1)  # +1 for terminate action
 
         # Define observation space based on a sample observation
-        sample_observation = self.encode_question("Sample question for shape determination")
-        sample_observation_np = sample_observation.numpy()
-        self.observation_space = Box(low=-float('inf'), high=float('inf'), shape=sample_observation_np.shape,
-                                     dtype=sample_observation_np.dtype)
+        sample_observation = self.encode_question("Sample question for shape determination").numpy()
+        self.observation_space = Box(low=-float('inf'), high=float('inf'), shape=sample_observation.shape,
+                                     dtype=sample_observation.dtype)
 
+        self.seed = seed
         self.reset()
 
-    # TODO - not sure should be a part of env class
-    def get_tokenized_length(self, question):
-        tokenized = self.encoder_tokenizer(question, return_tensors="pt", truncation=True, padding=True)
-        return tokenized['input_ids'].shape[1]
+    def _update_state_based_on_action(self, action):
+        sampled_question, sampled_answer = self.dataset.iloc[action]
+        self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
 
-    # TODO - punish on long episodes
+    def _is_prompt_too_long(self):
+        tokenized = self.encoder_tokenizer(self.question, return_tensors="pt", truncation=True, padding=True)
+        tokenized_len = tokenized['input_ids'].shape[1]
+        return tokenized_len > self.llm_model.max_prompt_len
+
     def step(self, action):
-        if action == self.special_action:
+        if action == self.terminate_action:
             done = True
         else:
-            # Concatenate the selected question and answer to the current prompt
-            sampled_question, sampled_answer = self.training_dataset.iloc[action]
-            self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
-            # TODO - MAX_BUFFER will be determined by the model
-            done = self.get_tokenized_length(self.question) > MAX_BUFFER
+            self._update_state_based_on_action(action)
+            done = self._is_prompt_too_long()
 
         if done:
             reward, generated_answer = self.evaluate_prompt()
@@ -70,17 +73,11 @@ class Environment(gym.Env):
 
         return self.encode_question(self.question), reward, done, generated_answer
 
-    def seed(self, seed):
-        self.seed = seed
-
-    def reset(self):
+    def reset(self, *, seed=None, options=None):
         # Sample a new question and answer from the training dataset
-        sample = self.training_dataset.sample(1).iloc[0]
-        self.question, self.answer = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
+        sample = self.dataset.sample(1).iloc[0]
+        self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
         return self.encode_question(self.question)
-
-    def render(self):
-        print(self.question)
 
     def encode_question(self, question):
         # Encode the question with the BERT tokenizer and model
@@ -91,6 +88,7 @@ class Environment(gym.Env):
         return outputs.last_hidden_state[0, 0, :]
 
     # TODO - try running heavier model on colab and slurm
+    # TODO - remove print, log instead using decorators
     def evaluate_prompt(self):
         # Use GPT-3.5-turbo to generate an answer for the current prompt
         print(f"Prompt:\n{self.question}\n")
@@ -108,10 +106,11 @@ class Environment(gym.Env):
 
         generated_answer = response['choices'][0]['message']['content'].strip()
         print(f"Generated answer:\n{generated_answer}\n")
-        print(f"Ground truth:\n{self.answer}\n")
+        print(f"Ground truth:\n{self.ground_truth}\n")
 
+        # TODO - based on configured reward metric, mainly determined by the dataset
         # Compare the generated answer to the correct answer
-        if generated_answer == self.answer:
+        if generated_answer == self.ground_truth:
             return 1, generated_answer
         else:
             return -1, generated_answer

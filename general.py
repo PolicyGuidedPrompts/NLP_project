@@ -27,14 +27,14 @@ def export_plot(ys, ylabel, title, filename):
     plt.savefig(filename)
     plt.close()
 
-
+# TODO - log level should be determined via environment variable
 def get_logger(filename):
     """
     Return a logger instance to a file
     """
     logger = logging.getLogger("logger")
-    logger.setLevel(logging.DEBUG)
-    logging.basicConfig(format="%(message)s", level=logging.DEBUG)
+    logger.setLevel(logging.INFO)
+    logging.basicConfig(format="%(message)s", level=logging.INFO)
     handler = logging.FileHandler(filename)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s: %(message)s"))

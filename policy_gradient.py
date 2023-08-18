@@ -1,11 +1,11 @@
-import numpy as np
-import torch
 import os
 
-import gym
+import numpy as np
+import torch
 from gym.spaces import Discrete
-from general import get_logger, Progbar, export_plot
+
 from baseline_network import BaselineNetwork
+from general import get_logger, export_plot
 from network_utils import build_mlp, device, np2torch
 from policy import CategoricalPolicy, GaussianPolicy
 
@@ -15,7 +15,7 @@ class PolicyGradient(object):
     Class for implementing a policy gradient algorithm
     """
 
-    def __init__(self, env, config, seed, logger=None):
+    def __init__(self, env, config, logger):
         """
         Initialize Policy Gradient Class
 
@@ -29,47 +29,34 @@ class PolicyGradient(object):
             os.makedirs(config.output_path)
 
         # store hyperparameters
-        # TODO - move seed to config
         self.config = config
-        self.seed = seed
 
+        # TODO - check this logger, use my own logger instead
         self.logger = logger
-        if logger is None:
-            self.logger = get_logger(config.log_path)
         self.env = env
-        self.env.seed(self.seed)
 
         # discrete vs continuous action space
-        self.discrete = isinstance(env.action_space, Discrete)
         # TODO - should fix things here for continuous action space
-        self.observation_dim = self.env.observation_space.shape[0]
-        self.action_dim = (
-            self.env.action_space.n if self.discrete else self.env.action_space.shape[0]
-        )
-
+        self.observation_dim, self.action_dim = self.env.observation_space.shape[0], self.env.action_space.n
         self.lr = self.config.learning_rate
 
         self.init_policy()
 
-        if config.use_baseline:
+        if config.baseline:
             self.baseline_network = BaselineNetwork(env, config)
 
     def init_policy(self):
-        # 1. Create a neural network
-        self.network = build_mlp(
+        self._network = build_mlp(
             input_size=self.observation_dim,
             output_size=self.action_dim,
             n_layers=self.config.n_layers,
             size=self.config.layer_size
         ).to(device)
 
-        # 2. Instantiate the correct policy
-        if self.discrete:
-            self.policy = CategoricalPolicy(self.network)
-        else:
-            self.policy = GaussianPolicy(self.network, self.action_dim)
+        self.policy = CategoricalPolicy(self._network)
 
-        # 3. Create an Adam optimizer
+        # TODO - used to have GaussianPolicy here
+
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
 
     def init_averages(self):
@@ -93,6 +80,7 @@ class PolicyGradient(object):
         if len(scores_eval) > 0:
             self.eval_reward = scores_eval[-1]
 
+    # TODO - remove this method
     def record_summary(self, t):
         pass
 
@@ -296,28 +284,31 @@ class PolicyGradient(object):
         return avg_reward
 
     def record(self):
-        """
-        Recreate an env and record a video for one episode
-        """
-        env = gym.make(self.config.env_name)
-        env.seed(self.seed)
-        env = gym.wrappers.Monitor(
-            env, self.config.record_path, video_callable=lambda x: True, resume=True
-        )
-        self.evaluate(env, 1)
+        pass
+        # """
+        # Recreate an env and record a video for one episode
+        # """
+        # env = gym.make(self.config.env_name)
+        # env.seed(self.seed)
+        # env = gym.wrappers.Monitor(
+        #     env, self.config.record_path, video_callable=lambda x: True, resume=True
+        # )
+        # self.evaluate(env, 1)
 
     def run(self):
-        # TODO think of removing record option
         """
         Apply procedures of training for a PG.
         """
         # record one game at the beginning
-        if self.config.record:
-            self.record()
+        # TODO think of removing record option
+        # if self.config.record:
+        #     self.record()
         # model
         print("Training started...")
         self.train()
         print("Training finished...")
         # record one game at the end
-        if self.config.record:
-            self.record()
+        # TODO think of removing record option
+
+        # if self.config.record:
+        #     self.record()

@@ -12,7 +12,8 @@ from policy_gradient import PolicyGradient
 
 class PPO(PolicyGradient):
 
-    def __init__(self, env, config, seed, logger=None):
+    def __init__(self, env, config, seed):
+        # TODO - change this hard-coded value
         config.use_baseline = True
         super(PPO, self).__init__(env, config, seed, logger)
         self.eps_clip = self.config.eps_clip

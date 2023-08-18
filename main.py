@@ -1,14 +1,19 @@
 # -*- coding: UTF-8 -*-
 
 import argparse
+import random
+
 import numpy as np
 import torch
+
+from config import get_config
+from dataset.dataset import DatasetFactory
+from encoder_model.encoder_model import EncoderFactory
+from env import Environment
+from llm_model.llm_model import LLMFactory
 from policy_gradient import PolicyGradient
 from ppo import PPO
-from config import get_config
-import random
-from datasets import load_dataset
-from env import Environment
+from general import get_logger
 
 ALLOWED_DATASETS = ['wics/strategy-qa']
 ALLOWED_LLMS = ['gpt2']
@@ -19,7 +24,7 @@ parser = argparse.ArgumentParser()
 # Required
 parser.add_argument("--dataset", type=str, required=True, choices=ALLOWED_DATASETS)
 parser.add_argument("--llm_model", type=str, required=True, choices=ALLOWED_LLMS)
-parser.add_argument("--encoder", type=str, required=True, choices=ALLOWED_ENCODERS)
+parser.add_argument("--encoder_model", type=str, required=True, choices=ALLOWED_ENCODERS)
 parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGORITHMS)
 
 # Defaults
@@ -48,22 +53,40 @@ def set_seeds(seed):
     random.seed(seed)
 
 
+# TODO - we want this as chain of responsibility
+def validate_namespace(namespace):
+    if namespace.algorithm == 'ppo':
+        assert namespace.baseline, "PPO requires baseline"
+
+
+# TODO - verify models_dir and model_name args
+# TODO - encapsulate with logger init parts and important prints
 if __name__ == "__main__":
     namespace = parser.parse_args()
+    validate_namespace(namespace)
 
-    set_seeds(namespace.seed)
-    config = get_config(namespace)
+    set_seeds(seed=namespace.seed)
+    config = get_config(namespace=namespace)
+    logger = get_logger(config.log_path)
 
-    # Load the dataset
-    dataset = load_dataset("wics/strategy-qa")["test"].to_pandas()[
-        ["question", "answer"]
-    ].assign(answer=lambda x: x['answer'].astype(str))
+    dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
+    llm_tokenizer, llm_model = LLMFactory.create_llm(model_name=namespace.llm_model)
+    encoder_tokenizer, encoder_model = EncoderFactory.create_encoder(model_name=namespace.encoder_model)
+    retriever_model = None  # TODO - add retriever logic
 
     # Define the environment
     env = Environment(
-        training_dataset=dataset,
+        dataset=dataset,
+        llm_tokenizer=llm_tokenizer,
+        llm_model=llm_model,
+        encoder_tokenizer=encoder_tokenizer,
+        encoder_model=encoder_model,
+        seed=namespace.seed,
     )
 
+
+    # TODO - maybe use factory here as well
+    policy_search_algorithms = {'pg': PolicyGradient, 'ppo': PPO}
     # train model
-    model = PolicyGradient(env, config, namespace.seed) if not namespace.ppo else PPO(env, config, namespace.seed)
-    model.run()
+    policy_search_algorithm = policy_search_algorithms[namespace.algorithm](env, config, logger)  # TODO - fix PPO seed logic
+    policy_search_algorithm.run()

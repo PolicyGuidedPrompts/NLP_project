@@ -5,10 +5,10 @@ class Config:
 
         # Dataset part
         self.dataset = namespace.dataset
+        self._dataset_name = self.dataset.replace('/', '-')
 
         # LLM part
         self.llm_model = namespace.llm_model
-        self.max_prompt_len = namespace.max_prompt_len  # TODO - based on model
 
         # Encoder part
         self.encoder_model = namespace.encoder_model
@@ -32,13 +32,17 @@ class Config:
         self.gamma = namespace.gamma  # the discount factor
         self.normalize_advantage = True
 
+        retriever_str = f"_retriever={self.retriever}_" if self.retriever else ""
+        baseline_str = f"_baseline={self.baseline}_" if self.baseline else ""
         # Output part
         self.output_path = f"results/" \
-                           f"dataset={self.dataset}_" \
-                           f"llm_model={self.llm_model}_" \
-                           f"encoder_model={self.encoder_model}_" \
-                           f"retriever={self.retriever}_" \
-                           f"baseline={self.baseline}/"
+                           f"algorithm={self.algorithm}_" \
+                           f"dataset={self._dataset_name}_" \
+                           f"llm={self.llm_model}_" \
+                           f"encoder={self.encoder_model}" \
+                           f"{retriever_str}" \
+                           f"{baseline_str}" \
+                           f"/"
         self.model_output = self.output_path + "model.weights/"
         self.log_path = self.output_path + "log.txt"
         self.scores_output = self.output_path + "scores.npy"
@@ -52,6 +56,5 @@ class Config:
 
 
 def get_config(namespace):
-    # TODO - generate derived attributes from given args
     config = Config(namespace)
     return config
