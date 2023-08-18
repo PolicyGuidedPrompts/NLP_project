@@ -84,9 +84,12 @@ if __name__ == "__main__":
         seed=namespace.seed,
     )
 
-
     # TODO - maybe use factory here as well
     policy_search_algorithms = {'pg': PolicyGradient, 'ppo': PPO}
     # train model
-    policy_search_algorithm = policy_search_algorithms[namespace.algorithm](env, config, logger)  # TODO - fix PPO seed logic
+    policy_search_algorithm = policy_search_algorithms[namespace.algorithm](env, config,
+                                                                            logger)  # TODO - fix PPO seed logic
     policy_search_algorithm.run()
+
+# TODO - clean repo from garbage
+# TODO - make sure models are being loaded instead of downloaded
