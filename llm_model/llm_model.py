@@ -25,7 +25,7 @@ class GPT2LLM(LLMModel):
             tokenizer.save_pretrained(model_dir)
             model.save_pretrained(model_dir)
 
-        model.max_prompt_len = 200
+        model.max_prompt_tokenized_len = 50
 
         return tokenizer, model
 

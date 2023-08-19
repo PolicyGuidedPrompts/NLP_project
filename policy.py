@@ -23,35 +23,32 @@ class BasePolicy:
         """
         raise NotImplementedError
 
-    def act(self, observations, return_log_prob = False):
+    def act(self, observation, return_log_prob=False):
         """
         Args:
-            observations: np.array of shape [batch size, dim(observation space)]
+            observation: Tensor of shape (1, dim(observation space))
         Returns:
-            sampled_actions: np.array of shape [batch size, *shape of action]
+            sampled_action: Tensor of shape (1, *shape of action)
             log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
         """
         # TODO - can't generate same action more than once
 
         # Get action distribution based on observations
-        action_distribution = self.action_distribution(observations)
+        action_distribution = self.action_distribution(observation)
 
         # Sample actions from the distribution
-        sampled_actions = action_distribution.sample()
+        sampled_action = action_distribution.sample()
 
         if return_log_prob:
+            # TODO - fix log_probs to be a tensor instead of numpy
             # Calculate log probabilities of the sampled actions
-            log_probs = action_distribution.log_prob(sampled_actions).detach().numpy()
-            sampled_actions = sampled_actions.detach().numpy()
+            log_probs = action_distribution.log_prob(sampled_action).detach().numpy()
+            return sampled_action, log_probs
 
-            return sampled_actions, log_probs
-
-        # Convert sampled actions to numpy array
-        sampled_actions = sampled_actions.detach().numpy()
-
-        return sampled_actions
+        return sampled_action
 
 
+# TODO - think if this CategoricalPolicy is even required
 class CategoricalPolicy(BasePolicy, nn.Module):
     def __init__(self, network):
         nn.Module.__init__(self)

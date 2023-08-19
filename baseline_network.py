@@ -14,16 +14,17 @@ class BaselineNetwork(nn.Module):
         super().__init__()
         self.config = config
         self.env = env
-        self.baseline = None
-        self.lr = self.config.baseline_learning_rate
+        self.baseline = self.config.baseline
+        self.lr = self.config.learning_rate
         observation_dim = self.env.observation_space.shape[0]
 
+        # TODO - baseline network should have different parameters than policy network
         # Create the neural network baseline
         self.network = build_mlp(
             input_size=observation_dim,
             output_size=1,
-            n_layers=self.config.baseline_n_layers,
-            size=self.config.baseline_layer_size
+            n_layers=self.config.n_layers,
+            size=self.config.layer_size
         )
 
         # Define the optimizer for the baseline
@@ -46,41 +47,33 @@ class BaselineNetwork(nn.Module):
     def calculate_advantage(self, returns, observations):
         """
         Args:
-            returns: np.array of shape [batch size]
+            returns: Tensor of shape [batch size]
                 all discounted future returns for each step
-            observations: np.array of shape [batch size, dim(observation space)]
+            observations: Tensor of shape [batch size, dim(observation space)]
         Returns:
-            advantages: np.array of shape [batch size]
+            advantages: Tensor of shape [batch size]
         """
-        observations = np2torch(observations)
         # Use the forward pass of the baseline network to get the predicted value of the state
         predicted_values = self(observations)
 
         # Compute the advantage estimates
-        advantages = returns - predicted_values.detach().numpy()
+        advantages = returns - predicted_values
 
         return advantages
 
     def update_baseline(self, returns, observations):
         """
         Args:
-            returns: np.array of shape [batch size], containing all discounted
+            returns: Tensor of shape [batch size], containing all discounted
                 future returns for each step
-            observations: np.array of shape [batch size, dim(observation space)]
+            observations: Tensor of shape [batch size, dim(observation space)]
         """
-        returns = np2torch(returns)
-        observations = np2torch(observations)
-        # Zero the gradients of the optimizer
         self.optimizer.zero_grad()
 
-        # Forward pass to get the predicted values
         predicted_values = self(observations)
 
-        # Compute the Mean Squared Error loss
         loss = F.mse_loss(predicted_values, returns)
 
-        # Backpropagate the loss
         loss.backward()
 
-        # Update the weights of the network
         self.optimizer.step()

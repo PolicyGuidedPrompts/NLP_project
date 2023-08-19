@@ -1,3 +1,12 @@
+Benchmarking
+
+Must check that everything regarding grad and numpy to torch has been done correctly.
+Think when with torch no grad is required!!!!!!!!!!!!!
+
+Make sure everything is float32
+
+Have to make sure everything is on device, ask GPT how to verify this easily
+
 When prompt too long, must choose special action
 
 caching dir of torch and HuggingFace

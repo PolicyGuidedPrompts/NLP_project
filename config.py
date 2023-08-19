@@ -32,8 +32,8 @@ class Config:
         self.gamma = namespace.gamma  # the discount factor
         self.normalize_advantage = True
 
-        retriever_str = f"_retriever={self.retriever}_" if self.retriever else ""
-        baseline_str = f"_baseline={self.baseline}_" if self.baseline else ""
+        retriever_str = f"_retriever={self.retriever}" if self.retriever else ""
+        baseline_str = f"_baseline={self.baseline}" if self.baseline else ""
         # Output part
         self.output_path = f"results/" \
                            f"algorithm={self.algorithm}_" \

@@ -11,8 +11,8 @@ from dataset.dataset import DatasetFactory
 from encoder_model.encoder_model import EncoderFactory
 from env import Environment
 from llm_model.llm_model import LLMFactory
-from policy_gradient import PolicyGradient
-from ppo import PPO
+from policy_search.policy_gradient import PolicyGradient
+from policy_search.ppo import PPO
 from general import get_logger
 
 ALLOWED_DATASETS = ['wics/strategy-qa']
@@ -29,7 +29,7 @@ parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGO
 
 # Defaults
 parser.add_argument("--seed", type=int, default=1)
-parser.add_argument("--baseline", type=bool, default=False)
+parser.add_argument("--baseline", action="store_true", default=False)
 parser.add_argument("--retriever", type=bool, default=False)
 parser.add_argument("--eps_clip", type=float, default=0.2)  # For PPO
 parser.add_argument("--update_freq", type=int, default=5)  # For PPO
@@ -37,13 +37,13 @@ parser.add_argument("--n_layers", type=int, default=1)
 parser.add_argument("--layer_size", type=int, default=64)
 parser.add_argument("--learning_rate", type=float, default=3e-2)
 parser.add_argument("--num_batches", type=int, default=100)  # number of batches trained on
-parser.add_argument("--batch_size", type=int, default=200)  # number of steps used to compute each policy update
+parser.add_argument("--batch_size", type=int, default=30)  # number of steps used to compute each policy update
 parser.add_argument("--gamma", type=float, default=1.0)  # the discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
 
 
 # TODO - add logic for different datasets
-# TODO - add logic for different llms + max_prompt_len
+# TODO - add logic for different llms + max_prompt_tokenized_len
 # TODO - right now we have code regarding gpt2, need to remove/do something about it because work with API now
 # TODO - if time permits add retriever logic
 
@@ -62,6 +62,7 @@ def validate_namespace(namespace):
 # TODO - verify models_dir and model_name args
 # TODO - encapsulate with logger init parts and important prints
 if __name__ == "__main__":
+    torch.autograd.set_detect_anomaly(True)
     namespace = parser.parse_args()
     validate_namespace(namespace)
 

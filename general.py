@@ -5,6 +5,7 @@ import math
 import numpy as np
 from collections import deque
 import matplotlib
+import os
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
@@ -32,6 +33,9 @@ def get_logger(filename):
     """
     Return a logger instance to a file
     """
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
+
     logger = logging.getLogger("logger")
     logger.setLevel(logging.INFO)
     logging.basicConfig(format="%(message)s", level=logging.INFO)

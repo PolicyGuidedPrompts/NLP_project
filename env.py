@@ -49,20 +49,20 @@ class Environment(gym.Env):
         self.seed = seed
         self.reset()
 
-    def _update_state_based_on_action(self, action):
+    def _update_prompt_based_on_action(self, action):
         sampled_question, sampled_answer = self.dataset.iloc[action]
         self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
 
     def _is_prompt_too_long(self):
         tokenized = self.encoder_tokenizer(self.question, return_tensors="pt", truncation=True, padding=True)
         tokenized_len = tokenized['input_ids'].shape[1]
-        return tokenized_len > self.llm_model.max_prompt_len
+        return tokenized_len > self.llm_model.max_prompt_tokenized_len
 
     def step(self, action):
         if action == self.terminate_action:
             done = True
         else:
-            self._update_state_based_on_action(action)
+            self._update_prompt_based_on_action(action)
             done = self._is_prompt_too_long()
 
         if done:
@@ -71,7 +71,7 @@ class Environment(gym.Env):
             reward = 0
             generated_answer = None
 
-        return self.encode_question(self.question), reward, done, generated_answer
+        return self.encode_question(self.question), torch.Tensor([reward]), done, generated_answer
 
     def reset(self, *, seed=None, options=None):
         # Sample a new question and answer from the training dataset
@@ -89,6 +89,7 @@ class Environment(gym.Env):
 
     # TODO - try running heavier model on colab and slurm
     # TODO - remove print, log instead using decorators
+    # TODO - this part should be based on llm_model configured or API call
     def evaluate_prompt(self):
         # Use GPT-3.5-turbo to generate an answer for the current prompt
         print(f"Prompt:\n{self.question}\n")

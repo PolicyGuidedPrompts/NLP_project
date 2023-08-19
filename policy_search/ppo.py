@@ -1,20 +1,14 @@
 import numpy as np
 import torch
-import torch.nn.functional as F
-import itertools
-import copy
-import os
-from general import get_logger, Progbar, export_plot
-from baseline_network import BaselineNetwork
-from network_utils import build_mlp, device, np2torch
-from policy import CategoricalPolicy, GaussianPolicy
-from policy_gradient import PolicyGradient
+from general import export_plot
+from network_utils import np2torch
+from policy_search.policy_gradient import PolicyGradient
 
 class PPO(PolicyGradient):
 
     def __init__(self, env, config, seed):
         # TODO - change this hard-coded value
-        config.use_baseline = True
+        config.baseline = True
         super(PPO, self).__init__(env, config, seed, logger)
         self.eps_clip = self.config.eps_clip
 
@@ -63,9 +57,9 @@ class PPO(PolicyGradient):
         averaged_total_rewards = []  # the returns for each iteration
 
         for t in range(self.config.num_batches):
-
+            # TODO - this paths should change to episodes
             # collect a minibatch of samples
-            paths, total_rewards = self.sample_paths(self.env)
+            paths, total_rewards = self.sample_episodes(self.env)
             all_total_rewards.extend(total_rewards)
             observations = np.concatenate([path["observation"] for path in paths])
             actions = np.concatenate([path["action"] for path in paths])
@@ -110,7 +104,9 @@ class PPO(PolicyGradient):
             self.config.plot_output,
         )
 
-    def sample_paths(self, env, num_episodes=None):
+    # TODO - use Episode class
+    # TODO - multiple places using env instead of self.env
+    def sample_episodes(self, env, num_episodes=None):
         """
         Sample paths (trajectories) from the environment.
 

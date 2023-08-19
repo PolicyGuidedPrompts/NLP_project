@@ -36,3 +36,16 @@ def np2torch(x, cast_double_to_float=True):
     if cast_double_to_float and x.dtype is torch.float64:
         x = x.float()
     return x
+
+
+def torch2np(tensor, cast_float_to_double=False):
+    """
+    Utility function that accepts a torch tensor and does the following:
+        1. Move it to the CPU (if it's on a GPU)
+        2. Convert to numpy array
+        3. Optionally casts float32 to float64
+    """
+    tensor = tensor.cpu()
+    if cast_float_to_double and tensor.dtype is torch.float32:
+        tensor = tensor.double()
+    return tensor.numpy()

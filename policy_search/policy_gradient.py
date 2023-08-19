@@ -8,6 +8,7 @@ from baseline_network import BaselineNetwork
 from general import get_logger, export_plot
 from network_utils import build_mlp, device, np2torch
 from policy import CategoricalPolicy, GaussianPolicy
+from policy_search.episode import Episode
 
 
 class PolicyGradient(object):
@@ -43,7 +44,7 @@ class PolicyGradient(object):
         self.init_policy()
 
         if config.baseline:
-            self.baseline_network = BaselineNetwork(env, config)
+            self.baseline_network = BaselineNetwork(self.env, config)
 
     def init_policy(self):
         self._network = build_mlp(
@@ -84,73 +85,60 @@ class PolicyGradient(object):
     def record_summary(self, t):
         pass
 
-    def sample_single_episode(self, env):
-        state = env.reset()
-        states, actions, rewards = [], [], []
-        episode_reward = 0
+    # TODO - maybe create an episode class
+    def sample_episode(self):
+        observation = self.env.reset()
+        episode = Episode()
         done = False
 
         while not done:
-            states.append(state)
-            action = self.policy.act(states[-1].unsqueeze(0))[0]
-            actions.append(action)
-            state, reward, done, _ = env.step(action)
-            rewards.append(reward)
-            episode_reward += reward
+            action = self.policy.act(observation.unsqueeze(0))
+            next_observation, reward, done, _ = self.env.step(action.item())
+            episode.add(observation, action, reward)
+            observation = next_observation
 
-        path = {
-            "observation": np.array(states),
-            "reward": np.array(rewards),
-            "action": np.array(actions),
-        }
-        return path, episode_reward
+        return episode
 
-    # TODO - rename to sample_episodes
     # TODO - thing if I can generate a batch of episodes at once
     # TODO - info is actually the generated answer
-    def sample_paths(self, env, num_episodes=None):
-        episode = 0
-        episode_rewards = []
-        paths = []
+    def sample_episodes(self):
+        episodes = []
         t = 0
 
-        while num_episodes or t < self.config.batch_size:
-            path, episode_reward = self.sample_single_episode(env)
-            t += len(path["observation"])  # Update the count with the number of steps in the episode
-            paths.append(path)
-            episode_rewards.append(episode_reward)
-            episode += 1
-            if num_episodes and episode >= num_episodes:
-                break
+        while t < self.config.batch_size:
+            episode = self.sample_episode()
+            t += len(episode)
+            episodes.append(episode)
 
-        return paths, episode_rewards
+        return episodes
 
-    def get_returns(self, paths):
+    def get_returns(self, episodes):
         """
-        Calculate the returns G_t for each timestep
+        Calculate the discounted cumulative returns G_t for each timestep in the provided episodes.
 
         Args:
-            paths: recorded sample paths. See sample_paths() for details.
+            episodes (list): A list of episodes. Each episode is expected to have a 'rewards' attribute
+                             which is a list of scalar rewards for each timestep in the episode.
 
-        Return:
-            returns: return G_t for each timestep
+        Returns:
+            torch.Tensor: A tensor containing the discounted cumulative returns G_t for each timestep
+                          across all episodes. The tensor shape is (total_timesteps, 1), where
+                          total_timesteps is the sum of the number of timesteps across all episodes.
         """
 
         all_returns = []
-        for path in paths:
-            rewards = path["reward"]
-            returns = []
+        for episode in episodes:
+            rewards = torch.tensor(episode.rewards)
+            returns = torch.zeros_like(rewards)
 
-            # Initialize G_t as 0
             G_t = 0
-            for r in reversed(rewards):
-                # Calculate G_t using the formula
-                G_t = r + self.config.gamma * G_t
-                returns.insert(0, G_t)
-
+            for t in reversed(range(len(rewards))):
+                G_t = rewards[t] + self.config.gamma * G_t
+                returns[t] = G_t
             all_returns.append(returns)
 
-        returns = np.concatenate(all_returns)
+        # Stack all the returns into a single tensor
+        returns = torch.cat(all_returns).view(-1)
         return returns
 
     def normalize_advantage(self, advantages):
@@ -160,28 +148,29 @@ class PolicyGradient(object):
         Returns:
             normalized_advantages: np.array of shape [batch size]
         """
-        mean_advantage = np.mean(advantages)
-        std_advantage = np.std(advantages)
+        mean_advantage = torch.mean(advantages)
+        std_advantage = torch.std(advantages)
         # Adding a small epsilon to avoid division by zero
         normalized_advantages = (advantages - mean_advantage) / (std_advantage + 1e-8)
         return normalized_advantages
 
     def calculate_advantage(self, returns, observations):
+        # TODO - need to make sure its not np.array
         """
         Calculates the advantage for each of the observations
         Args:
-            returns: np.array of shape [batch size]
-            observations: np.array of shape [batch size, dim(observation space)]
+            returns: Tensor of shape [batch size]
+            observations: Tensor of shape [batch size, dim(observation space)]
         Returns:
-            advantages: np.array of shape [batch size]
+            advantages: Tensor of shape [batch size]
         """
-        if self.config.use_baseline:
+        if self.config.baseline:
             # override the behavior of advantage by subtracting baseline
             advantages = self.baseline_network.calculate_advantage(
                 returns, observations
             )
         else:
-            advantages = returns
+            advantages = returns  # baseline is 0 in case of no baseline
 
         if self.config.normalize_advantage:
             advantages = self.normalize_advantage(advantages)
@@ -191,16 +180,12 @@ class PolicyGradient(object):
     def update_policy(self, observations, actions, advantages):
         """
         Args:
-            observations: np.array of shape [batch size, dim(observation space)]
-            actions: np.array of shape
+            observations: Tensor of shape [batch size, dim(observation space)]
+            actions: Tensor of shape
                 [batch size, dim(action space)] if continuous
                 [batch size] (and integer type) if discrete
-            advantages: np.array of shape [batch size]
+            advantages: Tensor of shape [batch size]
         """
-        observations = np2torch(observations)
-        actions = np2torch(actions)
-        advantages = np2torch(advantages)
-
         # Get log probabilities of the actions
         action_dists = self.policy.action_distribution(observations)
         log_probs = action_dists.log_prob(actions)
@@ -215,73 +200,43 @@ class PolicyGradient(object):
         loss.backward()
         self.optimizer.step()
 
+    def merge_episodes_to_batch(self, episodes):
+        # TODO - verify that these are numpy arrays
+        observations = torch.cat([torch.stack(episode.observations) for episode in episodes])
+        actions = torch.cat([torch.stack(episode.actions) for episode in episodes]).squeeze()
+
+        # compute Q-val estimates (discounted future returns) for each time step
+        returns = self.get_returns(episodes)
+
+        # advantage will depend on the baseline implementation
+        advantages = self.calculate_advantage(returns, observations)
+
+        return observations, actions, returns, advantages
+
     # TODO - add checkpoint logic and save model every x timestamps
     def train(self):
-        last_record = 0
-
         self.init_averages()
-        all_total_rewards = (
-            []
-        )  # the returns of all episodes samples for training purposes
-        averaged_total_rewards = []  # the returns for each iteration
 
         for t in range(self.config.num_batches):
-
-            # collect a minibatch of samples
-            # TODO - currently num_episodes=10 until figure out a way to parallel sampling path
-            paths, total_rewards = self.sample_paths(self.env, num_episodes=10)
-            all_total_rewards.extend(total_rewards)
-            observations = np.concatenate([path["observation"] for path in paths])
-            actions = np.concatenate([path["action"] for path in paths])
-
-            # compute Q-val estimates (discounted future returns) for each time step
-            returns = self.get_returns(paths)
-
-            # advantage will depend on the baseline implementation
-            advantages = self.calculate_advantage(returns, observations)
+            episodes = self.sample_episodes()
+            observations, actions, returns, advantages = self.merge_episodes_to_batch(episodes)
 
             # run training operations
-            if self.config.use_baseline:
+            if self.config.baseline:
                 self.baseline_network.update_baseline(returns, observations)
+
             self.update_policy(observations, actions, advantages)
 
-            # logging
-            if t % self.config.summary_freq == 0:
-                self.update_averages(total_rewards, all_total_rewards)
-                self.record_summary(t)
-
-            # compute reward statistics for this batch and log
-            avg_reward = np.mean(total_rewards)
-            sigma_reward = np.sqrt(np.var(total_rewards) / len(total_rewards))
-            msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
-                t, avg_reward, sigma_reward
-            )
-            averaged_total_rewards.append(avg_reward)
-            self.logger.info(msg)
-
-            if self.config.record and (last_record > self.config.record_freq):
-                self.logger.info("Recording...")
-                last_record = 0
-                self.record()
-
-        self.logger.info("- Training done.")
-        np.save(self.config.scores_output, averaged_total_rewards)
-        export_plot(
-            averaged_total_rewards,
-            "Score",
-            self.config.env_name,
-            self.config.plot_output,
-        )
-
     def evaluate(self, env=None, num_episodes=1):
-        if env == None:
-            env = self.env
-        paths, rewards = self.sample_paths(env, num_episodes)
-        avg_reward = np.mean(rewards)
-        sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
-        msg = "Average reward: {:04.2f} +/- {:04.2f}".format(avg_reward, sigma_reward)
-        self.logger.info(msg)
-        return avg_reward
+        pass
+        # if env == None:
+        #     env = self.env
+        # paths, rewards = self.sample_paths(env, num_episodes)
+        # avg_reward = np.mean(rewards)
+        # sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
+        # msg = "Average reward: {:04.2f} +/- {:04.2f}".format(avg_reward, sigma_reward)
+        # self.logger.info(msg)
+        # return avg_reward
 
     def record(self):
         pass
