@@ -32,22 +32,7 @@ def np2torch(x, cast_double_to_float=True):
         2. Move it to the GPU (if CUDA is available)
         3. Optionally casts float64 to float32 (torch is picky about types)
     """
-    x = torch.from_numpy(x).to(device)
+    x = torch.from_numpy(x).float().to(device)
     if cast_double_to_float and x.dtype is torch.float64:
         x = x.float()
     return x
-
-
-def torch2np(tensor, cast_float_to_double=False):
-    """
-    Utility function that accepts a torch tensor and does the following:
-        1. Detach it from the computation graph if it's attached
-        2. Move it to the CPU (if it's on a GPU)
-        3. Convert to numpy array
-        4. Optionally casts float32 to float64
-    """
-    tensor = tensor.detach().cpu()
-    if cast_float_to_double and tensor.dtype == torch.float32:
-        tensor = tensor.double()
-    return tensor.numpy()
-

@@ -26,26 +26,23 @@ class BasePolicy:
     def act(self, observation, return_log_prob=False):
         """
         Args:
-            observation: Tensor of shape (1, dim(observation space))
+            observation: np.array of shape (1, dim(observation space))
         Returns:
-            sampled_action: Tensor of shape (1, *shape of action)
+            sampled_action: np.array of shape (1, *shape of action)
             log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
         """
         # TODO - can't generate same action more than once
-
         # Get action distribution based on observations
+        observation = np2torch(observation)
         action_distribution = self.action_distribution(observation)
 
         # Sample actions from the distribution
         sampled_action = action_distribution.sample()
 
-        if return_log_prob:
-            # TODO - fix log_probs to be a tensor instead of numpy
-            # Calculate log probabilities of the sampled actions
-            log_probs = action_distribution.log_prob(sampled_action).detach().numpy()
-            return sampled_action, log_probs
+        # Used only to collect log_probs for old policy, not for the one being trained, hence detach().numpy()
+        log_probs = action_distribution.log_prob(sampled_action).detach().numpy() if return_log_prob else None
 
-        return sampled_action
+        return sampled_action.detach().numpy(), log_probs
 
 
 # TODO - think if this CategoricalPolicy is even required

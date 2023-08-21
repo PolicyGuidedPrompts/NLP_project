@@ -47,27 +47,32 @@ class BaselineNetwork(nn.Module):
     def calculate_advantage(self, returns, observations):
         """
         Args:
-            returns: Tensor of shape [batch size]
+            returns: np.array of shape [batch size]
                 all discounted future returns for each step
-            observations: Tensor of shape [batch size, dim(observation space)]
+            observations: np.array of shape [batch size, dim(observation space)]
         Returns:
-            advantages: Tensor of shape [batch size]
+            advantages: np.array of shape [batch size]
         """
+        observations = np2torch(observations)
+
         # Use the forward pass of the baseline network to get the predicted value of the state
         predicted_values = self(observations)
 
         # Compute the advantage estimates
-        advantages = returns - predicted_values
+        advantages = returns - predicted_values.detach().numpy()
 
         return advantages
 
     def update_baseline(self, returns, observations):
         """
         Args:
-            returns: Tensor of shape [batch size], containing all discounted
+            returns: np.array of shape [batch size], containing all discounted
                 future returns for each step
-            observations: Tensor of shape [batch size, dim(observation space)]
+            observations: np.array of shape [batch size, dim(observation space)]
         """
+        returns = np2torch(returns)
+        observations = np2torch(observations)
+
         self.optimizer.zero_grad()
 
         predicted_values = self(observations)

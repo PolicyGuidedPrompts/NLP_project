@@ -11,6 +11,7 @@ from policy import CategoricalPolicy, GaussianPolicy
 from policy_search.episode import Episode
 
 
+# TODO - remove unneeded imports
 class PolicyGradient(object):
     """
     Class for implementing a policy gradient algorithm
@@ -54,7 +55,7 @@ class PolicyGradient(object):
             size=self.config.layer_size
         ).to(device)
 
-        self.policy = CategoricalPolicy(self._network)
+        self.policy = CategoricalPolicy(self._network).to(device)
 
         # TODO - used to have GaussianPolicy here
 
@@ -91,10 +92,11 @@ class PolicyGradient(object):
         episode = Episode()
         done = False
 
+        # TODO - this have to be batched and the episode.add should be a numpy operation
         while not done:
-            action = self.policy.act(observation.unsqueeze(0))
+            action, _ = self.policy.act(observation.reshape(1, -1))
             next_observation, reward, done, _ = self.env.step(action.item())
-            episode.add(observation, action, reward)
+            episode.add(observation, action.item(), reward)
             observation = next_observation
 
         return episode
@@ -118,18 +120,18 @@ class PolicyGradient(object):
 
         Args:
             episodes (list): A list of episodes. Each episode is expected to have a 'rewards' attribute
-                             which is a list of scalar rewards for each timestep in the episode.
+                             which is a np.array of the corresponding rewards for each timestep in the episode.
 
         Returns:
-            torch.Tensor: A tensor containing the discounted cumulative returns G_t for each timestep
-                          across all episodes. The tensor shape is (total_timesteps, 1), where
+            np.array: A np.array containing the discounted cumulative returns G_t for each timestep
+                          across all episodes. The array shape is (total_timesteps), where
                           total_timesteps is the sum of the number of timesteps across all episodes.
         """
 
         all_returns = []
         for episode in episodes:
-            rewards = torch.tensor(episode.rewards)
-            returns = torch.zeros_like(rewards)
+            rewards = episode.rewards
+            returns = np.zeros_like(rewards)
 
             G_t = 0
             for t in reversed(range(len(rewards))):
@@ -138,7 +140,7 @@ class PolicyGradient(object):
             all_returns.append(returns)
 
         # Stack all the returns into a single tensor
-        returns = torch.cat(all_returns).view(-1)
+        returns = np.concatenate(all_returns)
         return returns
 
     def normalize_advantage(self, advantages):
@@ -148,8 +150,8 @@ class PolicyGradient(object):
         Returns:
             normalized_advantages: np.array of shape [batch size]
         """
-        mean_advantage = torch.mean(advantages)
-        std_advantage = torch.std(advantages)
+        mean_advantage = np.mean(advantages)
+        std_advantage = np.std(advantages)
         # Adding a small epsilon to avoid division by zero
         normalized_advantages = (advantages - mean_advantage) / (std_advantage + 1e-8)
         return normalized_advantages
@@ -159,10 +161,10 @@ class PolicyGradient(object):
         """
         Calculates the advantage for each of the observations
         Args:
-            returns: Tensor of shape [batch size]
-            observations: Tensor of shape [batch size, dim(observation space)]
+            returns: np.array of shape [batch size]
+            observations: np.array of shape [batch size, dim(observation space)]
         Returns:
-            advantages: Tensor of shape [batch size]
+            advantages: np.array of shape [batch size]
         """
         if self.config.baseline:
             # override the behavior of advantage by subtracting baseline
@@ -180,12 +182,16 @@ class PolicyGradient(object):
     def update_policy(self, observations, actions, advantages):
         """
         Args:
-            observations: Tensor of shape [batch size, dim(observation space)]
-            actions: Tensor of shape
+            observations: np.array of shape [batch size, dim(observation space)]
+            actions: np.array of shape
                 [batch size, dim(action space)] if continuous
                 [batch size] (and integer type) if discrete
-            advantages: Tensor of shape [batch size]
+            advantages: np.array of shape [batch size]
         """
+        observations = np2torch(observations)
+        actions = np2torch(actions)
+        advantages = np2torch(advantages)
+
         # Get log probabilities of the actions
         action_dists = self.policy.action_distribution(observations)
         log_probs = action_dists.log_prob(actions)
@@ -202,8 +208,8 @@ class PolicyGradient(object):
 
     def merge_episodes_to_batch(self, episodes):
         # TODO - verify that these are numpy arrays
-        observations = torch.cat([torch.stack(episode.observations) for episode in episodes])
-        actions = torch.cat([torch.stack(episode.actions) for episode in episodes]).squeeze()
+        observations = np.concatenate([episode.observations for episode in episodes])
+        actions = np.concatenate([episode.actions for episode in episodes])
 
         # compute Q-val estimates (discounted future returns) for each time step
         returns = self.get_returns(episodes)

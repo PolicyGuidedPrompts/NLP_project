@@ -117,9 +117,9 @@ class PPO(PolicyGradient):
 
         Returns:
             paths: a list of paths. Each path in paths is a dictionary with
-                path["observation"] a numpy array of ordered observations in the path
-                path["actions"] a numpy array of the corresponding actions in the path
-                path["reward"] a numpy array of the corresponding rewards in the path
+                path["observation"] a np.array of ordered observations in the path
+                path["actions"] a np.array of the corresponding actions in the path
+                path["reward"] a np.array of the corresponding rewards in the path
             total_rewards: the sum of all rewards encountered during this "path"
         """
         episode = 0

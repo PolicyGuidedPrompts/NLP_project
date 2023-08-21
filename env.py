@@ -4,6 +4,7 @@ import gym
 import openai
 import torch
 from gym.spaces import Discrete, Box
+import numpy as np
 
 openai.api_key = os.environ.get('OPENAI_API_KEY')
 if not openai.api_key:
@@ -71,13 +72,14 @@ class Environment(gym.Env):
             reward = 0
             generated_answer = None
 
-        return self.encode_question(self.question), torch.Tensor([reward]), done, generated_answer
+        return self.encode_question(self.question).detach().numpy(), reward, done, generated_answer
 
+    # TODO - this should return a batch instead of a single observation
     def reset(self, *, seed=None, options=None):
         # Sample a new question and answer from the training dataset
         sample = self.dataset.sample(1).iloc[0]
         self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
-        return self.encode_question(self.question)
+        return self.encode_question(self.question).detach().numpy()
 
     def encode_question(self, question):
         # Encode the question with the BERT tokenizer and model
