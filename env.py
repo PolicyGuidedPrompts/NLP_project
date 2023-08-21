@@ -4,7 +4,6 @@ import gym
 import openai
 import torch
 from gym.spaces import Discrete, Box
-import numpy as np
 
 openai.api_key = os.environ.get('OPENAI_API_KEY')
 if not openai.api_key:

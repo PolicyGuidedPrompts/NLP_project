@@ -1,16 +1,16 @@
 import numpy as np
 import torch
-from general import export_plot
+
 from network_utils import np2torch
 from policy_search.policy_gradient import PolicyGradient
+from policy_search.ppo_episode import PPOEpisode
+
 
 class PPO(PolicyGradient):
 
     def __init__(self, env, config, seed):
-        # TODO - change this hard-coded value
-        config.baseline = True
-        super(PPO, self).__init__(env, config, seed, logger)
-        self.eps_clip = self.config.eps_clip
+        assert config.baseline == True, "PPO requires baseline"
+        super(PPO, self).__init__(env, config, seed)
 
     def update_policy(self, observations, actions, advantages, old_logprobs):
         """
@@ -19,7 +19,7 @@ class PPO(PolicyGradient):
             actions: np.array of shape
                 [batch size, dim(action space)] if continuous
                 [batch size] (and integer type) if discrete
-            advantages: np.array of shape [batch size, 1]
+            advantages: np.array of shape [batch size]
             old_logprobs: np.array of shape [batch size]
         """
         observations = np2torch(observations)
@@ -37,7 +37,7 @@ class PPO(PolicyGradient):
         ratio = (new_logprobs - old_logprobs).exp()
 
         # Compute clipped objective
-        clipped_advantage = torch.clamp(ratio, 1.0 - self.eps_clip, 1.0 + self.eps_clip) * advantages
+        clipped_advantage = torch.clamp(ratio, 1.0 - self.config.eps_clip, 1.0 + self.config.eps_clip) * advantages
 
         # Compute the PPO objective function
         loss = -torch.min(ratio * advantages, clipped_advantage).mean()
@@ -47,119 +47,54 @@ class PPO(PolicyGradient):
         loss.backward()
         self.optimizer.step()
 
+    def merge_episodes_to_batch(self, episodes):
+        # TODO - verify that these are numpy arrays
+        observations = np.concatenate([episode.observations for episode in episodes])
+        old_logprobs = np.concatenate([episode.old_logprobs for episode in episodes])
+        actions = np.concatenate([episode.actions for episode in episodes])
+
+        # compute Q-val estimates (discounted future returns) for each time step
+        returns = self.get_returns(episodes)
+
+        # advantage will depend on the baseline implementation
+        advantages = self.calculate_advantage(returns, observations)
+
+        return observations, actions, returns, advantages, old_logprobs
+
     def train(self):
-        last_record = 0
-
-        self.init_averages()
-        all_total_rewards = (
-            []
-        )  # the returns of all episodes samples for training purposes
-        averaged_total_rewards = []  # the returns for each iteration
-
         for t in range(self.config.num_batches):
-            # TODO - this paths should change to episodes
-            # collect a minibatch of samples
-            paths, total_rewards = self.sample_episodes(self.env)
-            all_total_rewards.extend(total_rewards)
-            observations = np.concatenate([path["observation"] for path in paths])
-            actions = np.concatenate([path["action"] for path in paths])
-
-            old_logprobs = np.concatenate([path["old_logprobs"] for path in paths])
-
-            # compute Q-val estimates (discounted future returns) for each time step
-            returns = self.get_returns(paths)
-            advantages = self.calculate_advantage(returns, observations)
+            episodes = self.sample_episodes()
+            observations, actions, returns, advantages, old_logprobs = self.merge_episodes_to_batch(episodes)
 
             # run training operations
             for k in range(self.config.update_freq):
                 self.baseline_network.update_baseline(returns, observations)
-                self.update_policy(observations, actions, advantages, 
+                self.update_policy(observations, actions, advantages,
                                    old_logprobs)
 
-            # logging
-            if t % self.config.summary_freq == 0:
-                self.update_averages(total_rewards, all_total_rewards)
-                self.record_summary(t)
+    def sample_episode(self):
+        observation = self.env.reset()
+        episode = PPOEpisode()
+        done = False
 
-            # compute reward statistics for this batch and log
-            avg_reward = np.mean(total_rewards)
-            sigma_reward = np.sqrt(np.var(total_rewards) / len(total_rewards))
-            msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
-                    t, avg_reward, sigma_reward
-            )
-            averaged_total_rewards.append(avg_reward)
-            self.logger.info(msg)
+        # TODO - this have to be batched and the episode.add should be a numpy operation
+        while not done:
+            action, old_logprob = self.policy.act(observation.reshape(1, -1), return_log_prob=True)
+            next_observation, reward, done, _ = self.env.step(action.item())
+            episode.add(observation, action.item(), reward, old_logprob.item())
+            observation = next_observation
 
-            if self.config.record and (last_record > self.config.record_freq):
-                self.logger.info("Recording...")
-                last_record = 0
-                self.record()
-
-        self.logger.info("- Training done.")
-        np.save(self.config.scores_output, averaged_total_rewards)
-        export_plot(
-            averaged_total_rewards,
-            "Score",
-            self.config.env_name,
-            self.config.plot_output,
-        )
+        return episode
 
     # TODO - use Episode class
     # TODO - multiple places using env instead of self.env
-    def sample_episodes(self, env, num_episodes=None):
-        """
-        Sample paths (trajectories) from the environment.
-
-        Args:
-            num_episodes: the number of episodes to be sampled
-                if none, sample one batch (size indicated by config file)
-            env: open AI Gym envinronment
-
-        Returns:
-            paths: a list of paths. Each path in paths is a dictionary with
-                path["observation"] a np.array of ordered observations in the path
-                path["actions"] a np.array of the corresponding actions in the path
-                path["reward"] a np.array of the corresponding rewards in the path
-            total_rewards: the sum of all rewards encountered during this "path"
-        """
-        episode = 0
-        episode_rewards = [] 
-        paths = []
+    def sample_episodes(self):
+        episodes = []
         t = 0
 
-        while num_episodes or t < self.config.batch_size:
-            state = env.reset()
-            states, actions, old_logprobs, rewards = [], [], [], []
-            episode_reward = 0
+        while t < self.config.batch_size:
+            episode = self.sample_episode()
+            t += len(episode)
+            episodes.append(episode)
 
-            for step in range(self.config.max_ep_len):
-                states.append(state)
-                # Note the difference between this line and the corresponding line
-                # in PolicyGradient.
-                action, old_logprob = self.policy.act(states[-1][None], return_log_prob = True)
-                assert old_logprob.shape == (1,)
-                action, old_logprob = action[0], old_logprob[0]
-                state, reward, done, info = env.step(action)
-                actions.append(action)
-                old_logprobs.append(old_logprob)
-                rewards.append(reward)
-                episode_reward += reward
-                t += 1
-                if done or step == self.config.max_ep_len - 1:
-                    episode_rewards.append(episode_reward)
-                    break
-                if (not num_episodes) and t == self.config.batch_size:
-                    break
-
-            path = {
-                "observation": np.array(states),
-                "reward": np.array(rewards),
-                "action": np.array(actions),
-                "old_logprobs": np.array(old_logprobs)
-            }
-            paths.append(path)
-            episode += 1
-            if num_episodes and episode >= num_episodes:
-                break
-
-        return paths, episode_rewards
+        return episodes

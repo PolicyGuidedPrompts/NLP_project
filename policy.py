@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.distributions as ptd
 
-from network_utils import np2torch, device
+from network_utils import np2torch
 
 
 class BasePolicy:

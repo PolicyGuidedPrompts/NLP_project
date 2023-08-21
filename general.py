@@ -1,11 +1,11 @@
-import time
-import sys
 import logging
 import math
-import numpy as np
-from collections import deque
-import matplotlib
 import os
+import sys
+import time
+
+import matplotlib
+import numpy as np
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt

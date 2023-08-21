@@ -2,12 +2,10 @@ import os
 
 import numpy as np
 import torch
-from gym.spaces import Discrete
 
 from baseline_network import BaselineNetwork
-from general import get_logger, export_plot
 from network_utils import build_mlp, device, np2torch
-from policy import CategoricalPolicy, GaussianPolicy
+from policy import CategoricalPolicy
 from policy_search.episode import Episode
 
 
@@ -60,12 +58,6 @@ class PolicyGradient(object):
         # TODO - used to have GaussianPolicy here
 
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
-
-    def init_averages(self):
-        self.avg_reward = 0.0
-        self.max_reward = 0.0
-        self.std_reward = 0.0
-        self.eval_reward = 0.0
 
     def update_averages(self, rewards, scores_eval):
         """
@@ -221,8 +213,6 @@ class PolicyGradient(object):
 
     # TODO - add checkpoint logic and save model every x timestamps
     def train(self):
-        self.init_averages()
-
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes()
             observations, actions, returns, advantages = self.merge_episodes_to_batch(episodes)

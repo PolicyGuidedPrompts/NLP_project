@@ -1,8 +1,8 @@
-import numpy as np
 import torch
 import torch.nn as nn
-from network_utils import build_mlp, device, np2torch
 import torch.nn.functional as F
+
+from network_utils import build_mlp, np2torch
 
 
 class BaselineNetwork(nn.Module):
