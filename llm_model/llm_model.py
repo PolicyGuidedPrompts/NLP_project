@@ -33,21 +33,18 @@ class GPT2LLM(LLMModel):
 
         required_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.json"]
         if all(os.path.exists(os.path.join(model_dir, file)) for file in required_files):
-            tokenizer = AutoTokenizer.from_pretrained(model_dir)
-            model = GPT2LMHeadModel.from_pretrained(model_dir)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+            self.model = GPT2LMHeadModel.from_pretrained(model_dir)
         else:
-            tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            model = GPT2LMHeadModel.from_pretrained(self.model_name)
-            tokenizer.save_pretrained(model_dir)
-            model.save_pretrained(model_dir)
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            self.model = GPT2LMHeadModel.from_pretrained(self.model_name)
+            self.tokenizer.save_pretrained(model_dir)
+            self.model.save_pretrained(model_dir)
 
-        if not tokenizer.pad_token:
-            tokenizer.pad_token = tokenizer.eos_token
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        # TODO - adjust this later
         self.max_prompt_tokenized_len = 50
-
-        self.tokenizer, self.model = tokenizer, model
 
     # TODO - google this and make sure it's correct
     def generate_answer(self, prompt):

@@ -1,39 +1,57 @@
 import os
+from abc import abstractmethod
+import torch
 from transformers import BertTokenizer, BertModel
 
 
 class EncoderModel:
     models_dir = "./saved_models/encoder_models"
 
-    def load(self):
-        raise NotImplementedError
+    @abstractmethod
+    def __init__(self):
+        self.model = None
+        self.tokenizer = None
+
+    @abstractmethod
+    def encode(self, text):
+        pass
 
 
-# noinspection DuplicatedCode
 class BertEncoder(EncoderModel):
     model_name = "bert-base-uncased"
 
-    def load(self):
+    def __init__(self):
+        super().__init__()
+
         model_dir = os.path.join(os.path.abspath(EncoderModel.models_dir), self.model_name)
 
         required_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.json"]
         if all(os.path.exists(os.path.join(model_dir, file)) for file in required_files):
-            tokenizer = BertTokenizer.from_pretrained(model_dir)
-            model = BertModel.from_pretrained(model_dir)
+            self.tokenizer = BertTokenizer.from_pretrained(model_dir)
+            self.model = BertModel.from_pretrained(model_dir)
         else:
-            tokenizer = BertTokenizer.from_pretrained(self.model_name)
-            model = BertModel.from_pretrained(self.model_name)
-            tokenizer.save_pretrained(model_dir)
-            model.save_pretrained(model_dir)
+            self.tokenizer = BertTokenizer.from_pretrained(self.model_name)
+            self.model = BertModel.from_pretrained(self.model_name)
+            self.tokenizer.save_pretrained(model_dir)
+            self.model.save_pretrained(model_dir)
 
-        return tokenizer, model
+    def encode(self, text):
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        # Return the last hidden state as the text representation
+        return outputs.last_hidden_state[0, 0, :]
+
+
+AVAILABLE_ENCODERS = {
+    'bert-base-uncased': BertEncoder
+}
 
 
 class EncoderFactory:
     @staticmethod
     def create_encoder(model_name):
-        available_encoders = {BertEncoder.model_name: BertEncoder}
-        if model_name in available_encoders:
-            return available_encoders[model_name]().load()
+        if model_name in AVAILABLE_ENCODERS:
+            return AVAILABLE_ENCODERS[model_name]()
         else:
             raise ValueError(f"Encoder {model_name} not supported!")

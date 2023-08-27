@@ -8,7 +8,7 @@ import torch
 
 from config import get_config
 from dataset.dataset import DatasetFactory
-from encoder_model.encoder_model import EncoderFactory
+from encoder_model.encoder_model import EncoderFactory, AVAILABLE_ENCODERS
 from env import Environment
 from llm_model.llm_model import LLMFactory, AVAILABLE_LLM_MODELS
 from policy_search.policy_gradient import PolicyGradient
@@ -16,8 +16,8 @@ from policy_search.ppo import PPO
 from general import get_logger
 
 ALLOWED_DATASETS = ['wics/strategy-qa']
-ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()
-ALLOWED_ENCODERS = ['bert-base-uncased']
+ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5'
+ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 
 parser = argparse.ArgumentParser()
@@ -72,15 +72,14 @@ if __name__ == "__main__":
 
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
     llm = LLMFactory.create_llm(model_name=namespace.llm_model)
-    encoder_tokenizer, encoder_model = EncoderFactory.create_encoder(model_name=namespace.encoder_model)
+    encoder = EncoderFactory.create_encoder(model_name=namespace.encoder_model)
     retriever_model = None  # TODO - add retriever logic
 
     # Define the environment
     env = Environment(
         dataset=dataset,
         llm=llm,
-        encoder_tokenizer=encoder_tokenizer,
-        encoder_model=encoder_model,
+        encoder=encoder,
         seed=namespace.seed,
     )
 
