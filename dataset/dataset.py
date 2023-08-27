@@ -14,7 +14,6 @@ class StrategyQaDataset(Dataset):
     dataset_name = "wics/strategy-qa"
 
     def load(self):
-        # Your logic for the "wics/strategy-qa" dataset
         dataset = load_dataset(self.dataset_name)["test"].to_pandas()[
             ["question", "answer"]
         ].assign(answer=lambda x: x['answer'].astype(str))

@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-
 import argparse
 import random
 
@@ -38,7 +36,7 @@ parser.add_argument("--layer_size", type=int, default=64)
 parser.add_argument("--learning_rate", type=float, default=3e-2)
 parser.add_argument("--num_batches", type=int, default=100)  # number of batches trained on
 parser.add_argument("--batch_size", type=int, default=30)  # number of steps used to compute each policy update
-parser.add_argument("--gamma", type=float, default=1.0)  # the discount factor
+parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
 
 
@@ -75,7 +73,6 @@ if __name__ == "__main__":
     encoder = EncoderFactory.create_encoder(model_name=namespace.encoder_model)
     retriever_model = None  # TODO - add retriever logic
 
-    # Define the environment
     env = Environment(
         dataset=dataset,
         llm=llm,
@@ -85,7 +82,6 @@ if __name__ == "__main__":
 
     # TODO - maybe use factory here as well
     policy_search_algorithms = {'pg': PolicyGradient, 'ppo': PPO}
-    # train model
     policy_search_algorithm = policy_search_algorithms[namespace.algorithm](env, config,
                                                                             logger)  # TODO - fix PPO seed logic
     policy_search_algorithm.run()

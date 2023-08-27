@@ -28,6 +28,7 @@ def export_plot(ys, ylabel, title, filename):
     plt.savefig(filename)
     plt.close()
 
+
 # TODO - log level should be determined via environment variable
 def get_logger(filename):
     """

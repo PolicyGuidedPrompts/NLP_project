@@ -31,11 +31,9 @@ class BasePolicy:
             log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
         """
         # TODO - can't generate same action more than once
-        # Get action distribution based on observations
         observation = np2torch(observation)
         action_distribution = self.action_distribution(observation)
 
-        # Sample actions from the distribution
         sampled_action = action_distribution.sample()
 
         # Used only to collect log_probs for old policy, not for the one being trained, hence detach().numpy()

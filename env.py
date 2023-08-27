@@ -35,7 +35,6 @@ class Environment(gym.Env):
         self.llm = llm
         self.terminate_action = terminate_action
 
-        # Define action space
         self.action_space = Discrete(len(self.dataset) + 1)  # +1 for terminate action
 
         # Define observation space based on a sample observation
@@ -67,7 +66,6 @@ class Environment(gym.Env):
 
     # TODO - this should return a batch instead of a single observation
     def reset(self, *, seed=None, options=None):
-        # Sample a new question and answer from the training dataset
         sample = self.dataset.sample(1).iloc[0]
         self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
         return self.encoder.encode(self.question).detach().numpy()
@@ -85,7 +83,6 @@ class Environment(gym.Env):
         print(f"Ground truth:\n{self.ground_truth}\n")
 
         # TODO - based on configured reward metric, mainly determined by the dataset
-        # Compare the generated answer to the correct answer
         if generated_answer == self.ground_truth:
             return 1, generated_answer
         else:
