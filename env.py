@@ -29,13 +29,12 @@ if not openai.api_key:
 
 class Environment(gym.Env):
 
-    def __init__(self, dataset, llm_tokenizer, llm_model, encoder_tokenizer, encoder_model, seed, terminate_action=0):
+    def __init__(self, dataset, llm, encoder_tokenizer, encoder_model, seed, terminate_action=0):
         super(Environment, self).__init__()
         self.dataset = dataset
         self.encoder_tokenizer = encoder_tokenizer
         self.encoder_model = encoder_model
-        self.llm_tokenizer = llm_tokenizer
-        self.llm_model = llm_model
+        self.llm = llm
         self.terminate_action = terminate_action
 
         # Define action space
@@ -56,7 +55,7 @@ class Environment(gym.Env):
     def _is_prompt_too_long(self):
         tokenized = self.encoder_tokenizer(self.question, return_tensors="pt", truncation=True, padding=True)
         tokenized_len = tokenized['input_ids'].shape[1]
-        return tokenized_len > self.llm_model.max_prompt_tokenized_len
+        return tokenized_len > self.llm.max_prompt_tokenized_len
 
     def step(self, action):
         if action == self.terminate_action:
@@ -88,25 +87,15 @@ class Environment(gym.Env):
         # Use the last hidden state as the question representation
         return outputs.last_hidden_state[0, 0, :]
 
+    # TODO - implement this per defined config metric
+    def score_generated_answer(self, generated_answer):
+        return NotImplemented
+
     # TODO - try running heavier model on colab and slurm
     # TODO - remove print, log instead using decorators
-    # TODO - this part should be based on llm_model configured or API call
     def evaluate_prompt(self):
-        # Use GPT-3.5-turbo to generate an answer for the current prompt
         print(f"Prompt:\n{self.question}\n")
-
-        # Making an API call using the chat endpoint
-        # TODO - model should be configurable
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0613",
-            messages=[
-                {"role": "user", "content": self.question}
-            ],
-            # TODO - 15 for now, remove this later, should be configurable
-            max_tokens=15  # Limit the output to 15 tokens
-        )
-
-        generated_answer = response['choices'][0]['message']['content'].strip()
+        generated_answer = self.llm.generate_answer(self.question)
         print(f"Generated answer:\n{generated_answer}\n")
         print(f"Ground truth:\n{self.ground_truth}\n")
 
