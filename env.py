@@ -2,7 +2,6 @@ import os
 
 import gym
 import openai
-import torch
 from gym.spaces import Discrete, Box
 
 openai.api_key = os.environ.get('OPENAI_API_KEY')
@@ -51,18 +50,12 @@ class Environment(gym.Env):
         sampled_question, sampled_answer = self.dataset.iloc[action]
         self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
 
-    # TODO - should be based on the llm tokenizer (note that GPT3.5 doesn't have tokenizer)
-    def _is_prompt_too_long(self):
-        tokenized = self.encoder.tokenizer(self.question, return_tensors="pt", truncation=True, padding=True)
-        tokenized_len = tokenized['input_ids'].shape[1]
-        return tokenized_len > self.llm.max_prompt_tokenized_len
-
     def step(self, action):
         if action == self.terminate_action:
             done = True
         else:
             self._update_prompt_based_on_action(action)
-            done = self._is_prompt_too_long()
+            done = self.llm.is_prompt_too_long(self.question)
 
         if done:
             reward, generated_answer = self.evaluate_prompt()
