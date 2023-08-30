@@ -9,21 +9,6 @@ class EncoderModel:
 
     def __init__(self, model_name):
         self.model_name = model_name
-        self.model = None
-        self.tokenizer = None
-        self._initialize_model_and_tokenizer()
-
-    @abstractmethod
-    def encode(self, text):
-        pass
-
-    @property
-    def model_path(self):
-        if hasattr(self, 'repository'):
-            return os.path.join(self.repository, self.model_name)
-        return self.model_name
-
-    def _initialize_model_and_tokenizer(self):
         model_dir = os.path.join(os.path.abspath(self.models_dir), self.model_name)
 
         required_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.json"]
@@ -35,6 +20,16 @@ class EncoderModel:
             self.model = AutoModel.from_pretrained(self.model_path)
             self.tokenizer.save_pretrained(model_dir)
             self.model.save_pretrained(model_dir)
+
+    @abstractmethod
+    def encode(self, text):
+        pass
+
+    @property
+    def model_path(self):
+        if hasattr(self, 'repository'):
+            return os.path.join(self.repository, self.model_name)
+        return self.model_name
 
 
 class BertEncoder(EncoderModel):
