@@ -10,6 +10,7 @@ from dataset.dataset import DatasetFactory
 from encoder_model.encoder_model import EncoderFactory, AVAILABLE_ENCODERS
 from env import Environment
 from llm_model.llm_model import LLMFactory, AVAILABLE_LLM_MODELS
+from network_utils import device
 from policy_search.policy_gradient import PolicyGradient
 from policy_search.ppo import PPO
 from utils.utils import get_logger
@@ -45,7 +46,6 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
 
-
 # TODO - add logic for different datasets
 # TODO - add logic for different llms + max_prompt_tokenized_len
 # TODO - if time permits add retriever logic
@@ -62,6 +62,7 @@ def validate_namespace(namespace):
     if namespace.algorithm == 'ppo':
         assert namespace.baseline, "PPO requires baseline"
 
+
 # TODO - log the device!!!
 # TODO - log used config
 # TODO - verify models_dir and model_name args
@@ -73,6 +74,7 @@ if __name__ == "__main__":
     set_seeds(seed=namespace.seed)
     config = get_config(namespace=namespace)
     logger = get_logger(config.log_path)
+    logger.info(f"Using device: {device}")
     logger.info(f"Config returned: {config.__dict__}")
 
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)

@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def build_mlp(input_size, output_size, n_layers, size):
     """
@@ -20,9 +22,6 @@ def build_mlp(input_size, output_size, n_layers, size):
         layers.append(nn.ReLU())
     layers.append(nn.Linear(size, output_size))
     return nn.Sequential(*layers)
-
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def np2torch(x, cast_double_to_float=True):
