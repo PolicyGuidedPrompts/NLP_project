@@ -165,7 +165,6 @@ class PolicyGradient(object):
         return normalized_advantages
 
     def calculate_advantage(self, returns, observations):
-        # TODO - need to make sure its not np.array
         """
         Calculates the advantage for each of the observations
         Args:
@@ -215,7 +214,6 @@ class PolicyGradient(object):
         self.optimizer.step()
 
     def merge_episodes_to_batch(self, episodes):
-        # TODO - verify that these are numpy arrays
         observations = np.concatenate([episode.observations for episode in episodes])
         actions = np.concatenate([episode.actions for episode in episodes])
 

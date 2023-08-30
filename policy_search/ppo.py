@@ -47,7 +47,6 @@ class PPO(PolicyGradient):
         self.optimizer.step()
 
     def merge_episodes_to_batch(self, episodes):
-        # TODO - verify that these are numpy arrays
         observations = np.concatenate([episode.observations for episode in episodes])
         old_logprobs = np.concatenate([episode.old_logprobs for episode in episodes])
         actions = np.concatenate([episode.actions for episode in episodes])
