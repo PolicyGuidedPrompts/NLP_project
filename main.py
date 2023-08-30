@@ -11,7 +11,7 @@ from env import Environment
 from llm_model.llm_model import LLMFactory, AVAILABLE_LLM_MODELS
 from policy_search.policy_gradient import PolicyGradient
 from policy_search.ppo import PPO
-from general import get_logger
+from utils.utils import get_logger
 
 ALLOWED_DATASETS = ['wics/strategy-qa']
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5'
@@ -42,7 +42,6 @@ parser.add_argument("--normalize_advantage", type=bool, default=True)
 
 # TODO - add logic for different datasets
 # TODO - add logic for different llms + max_prompt_tokenized_len
-# TODO - right now we have code regarding gpt2, need to remove/do something about it because work with API now
 # TODO - if time permits add retriever logic
 
 def set_seeds(seed):
@@ -51,7 +50,7 @@ def set_seeds(seed):
     random.seed(seed)
 
 
-# TODO - we want this as chain of responsibility
+# TODO - we want this as chain of responsibility <- leave this, create predetermined configuration files instead
 def validate_namespace(namespace):
     if namespace.algorithm == 'ppo':
         assert namespace.baseline, "PPO requires baseline"
@@ -61,13 +60,13 @@ def validate_namespace(namespace):
 # TODO - verify models_dir and model_name args
 # TODO - encapsulate with logger init parts and important prints
 if __name__ == "__main__":
-    torch.autograd.set_detect_anomaly(True)
     namespace = parser.parse_args()
     validate_namespace(namespace)
 
     set_seeds(seed=namespace.seed)
     config = get_config(namespace=namespace)
     logger = get_logger(config.log_path)
+    logger.info(f"Config returned: {config.__dict__}")
 
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
     llm = LLMFactory.create_llm(model_name=namespace.llm_model)

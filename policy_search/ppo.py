@@ -9,7 +9,6 @@ from policy_search.ppo_episode import PPOEpisode
 class PPO(PolicyGradient):
 
     def __init__(self, env, config, seed):
-        assert config.baseline == True, "PPO requires baseline"
         super(PPO, self).__init__(env, config, seed)
 
     def update_policy(self, observations, actions, advantages, old_logprobs):

@@ -1,15 +1,13 @@
-import logging
 import math
-import os
 import sys
 import time
-
+import torch
 import matplotlib
 import numpy as np
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
-import torch
+
 
 
 def export_plot(ys, ylabel, title, filename):
@@ -27,24 +25,6 @@ def export_plot(ys, ylabel, title, filename):
     plt.title(title)
     plt.savefig(filename)
     plt.close()
-
-
-# TODO - log level should be determined via environment variable
-def get_logger(filename):
-    """
-    Return a logger instance to a file
-    """
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-
-    logger = logging.getLogger("logger")
-    logger.setLevel(logging.INFO)
-    logging.basicConfig(format="%(message)s", level=logging.INFO)
-    handler = logging.FileHandler(filename)
-    handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s: %(message)s"))
-    logging.getLogger().addHandler(handler)
-    return logger
 
 
 class Progbar(object):
