@@ -2,6 +2,8 @@ import time
 from functools import wraps
 import logging
 import sys
+import os
+import io
 
 
 def time_it(func):
@@ -17,8 +19,8 @@ def time_it(func):
 
 
 def get_logger(log_path):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    logger = logging.getLogger('root')
+    logger.setLevel(os.environ.get('LOGLEVEL'))
 
     file_handler = logging.FileHandler(log_path)
     file_handler.setLevel(logging.DEBUG)
@@ -34,3 +36,16 @@ def get_logger(log_path):
     logger.addHandler(stream_handler)
 
     return logger
+
+
+class CaptureStdout:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = self._new_stdout = io.StringIO()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout = self._original_stdout
+
+    def get_output(self):
+        return self._new_stdout.getvalue()

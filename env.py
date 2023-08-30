@@ -1,3 +1,4 @@
+import logging
 import os
 
 import gym
@@ -7,7 +8,6 @@ from gym.spaces import Discrete, Box
 openai.api_key = os.environ.get('OPENAI_API_KEY')
 if not openai.api_key:
     raise ValueError("Please set the OPENAI_API_KEY environment variable.")
-
 
 # TODO - training_dataset + llm should be defined from configuration file
 # TODO - Deberta tokenizer and model
@@ -26,8 +26,10 @@ if not openai.api_key:
 # Questions:
 # Ask about budget
 
-class Environment(gym.Env):
+logger = logging.getLogger('root')
 
+
+class Environment(gym.Env):
     def __init__(self, dataset, llm, encoder, seed, terminate_action=0):
         super(Environment, self).__init__()
         self.dataset = dataset
@@ -44,6 +46,12 @@ class Environment(gym.Env):
 
         self.seed = seed
         self.reset()
+        logger.info(f"Environment initialized with: "
+                    f"({self.seed=}, "
+                    f"{self.action_space=}, "
+                    f"{self.observation_space=}, "
+                    f"{self.llm.model_name=}, "
+                    f"{self.encoder.model_name=})")
 
     def _update_prompt_based_on_action(self, action):
         sampled_question, sampled_answer = self.dataset.iloc[action]
@@ -75,12 +83,11 @@ class Environment(gym.Env):
         return NotImplemented
 
     # TODO - try running heavier model on colab and slurm
-    # TODO - remove print, log instead using decorators
     def evaluate_prompt(self):
-        print(f"Prompt:\n{self.question}\n")
         generated_answer = self.llm.generate_answer(self.question)
-        print(f"Generated answer:\n{generated_answer}\n")
-        print(f"Ground truth:\n{self.ground_truth}\n")
+        logger.debug(f"\nPrompt:\n{self.question}\n"
+                     f"Generated answer:\n{generated_answer}\n"
+                     f"Ground truth:\n{self.ground_truth}\n")
 
         # TODO - based on configured reward metric, mainly determined by the dataset
         if generated_answer == self.ground_truth:

@@ -1,8 +1,15 @@
+import logging
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from network_utils import build_mlp, np2torch
+from torchsummary import summary
+
+from utils.utils import CaptureStdout
+
+logger = logging.getLogger('root')
 
 
 class BaselineNetwork(nn.Module):
@@ -27,8 +34,16 @@ class BaselineNetwork(nn.Module):
             size=self.config.layer_size
         )
 
+        with CaptureStdout() as capture:
+            summary(self.network, input_size=(observation_dim,))
+
         # Define the optimizer for the baseline
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=self.lr)
+        logger.info(f"Baseline initialized with:"
+                    f"\n{capture.get_output()}"
+                    f"{self.optimizer=}"
+                    f"\n{observation_dim=}"
+                    f"\n{self.lr=}")
 
     def forward(self, observations):
         """

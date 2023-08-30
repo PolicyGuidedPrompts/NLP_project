@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -7,6 +8,11 @@ from baseline_network import BaselineNetwork
 from network_utils import build_mlp, device, np2torch
 from policy import CategoricalPolicy
 from policy_search.episode import Episode
+from torchsummary import summary
+
+from utils.utils import CaptureStdout
+
+logger = logging.getLogger('root')
 
 
 # TODO - remove unneeded imports
@@ -44,6 +50,16 @@ class PolicyGradient(object):
 
         if config.baseline:
             self.baseline_network = BaselineNetwork(self.env, config)
+
+        with CaptureStdout() as capture:
+            summary(self.policy.network, input_size=(self.observation_dim,))
+
+        logger.info(f"Policy initialized with:"
+                    f"\n{capture.get_output()}"
+                    f"{self.optimizer=})"
+                    f"\n{self.observation_dim=}, "
+                    f"{self.action_dim=}, "
+                    f"{self.lr=}")
 
     def init_policy(self):
         self._network = build_mlp(
@@ -255,9 +271,9 @@ class PolicyGradient(object):
         # if self.config.record:
         #     self.record()
         # model
-        print("Training started...")
+        logger.info("Training started...")
         self.train()
-        print("Training finished...")
+        logger.info("Training completed...")
         # record one game at the end
         # TODO think of removing record option
 

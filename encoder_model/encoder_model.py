@@ -1,7 +1,10 @@
+import logging
 import os
 from abc import abstractmethod
 import torch
 from transformers import AutoTokenizer, AutoModel
+
+logger = logging.getLogger('root')
 
 
 class EncoderModel:
@@ -10,6 +13,7 @@ class EncoderModel:
     def __init__(self, model_name):
         self.model_name = model_name
         model_dir = os.path.join(os.path.abspath(self.models_dir), self.model_name)
+        logger.info(f"Loading encoder model {self.model_name=}")
 
         required_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.json"]
         if all(os.path.exists(os.path.join(model_dir, file)) for file in required_files):
@@ -95,4 +99,5 @@ class EncoderFactory:
         if model_name in AVAILABLE_ENCODERS:
             return AVAILABLE_ENCODERS[model_name]()
         else:
+            logger.error(f"Encoder {model_name} not supported!")
             raise ValueError(f"Encoder {model_name} not supported!")

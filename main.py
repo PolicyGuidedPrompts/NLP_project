@@ -1,4 +1,5 @@
 import argparse
+import logging
 import random
 
 import numpy as np
@@ -39,10 +40,16 @@ parser.add_argument("--batch_size", type=int, default=30)  # number of steps use
 parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
 
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+
+
 
 # TODO - add logic for different datasets
 # TODO - add logic for different llms + max_prompt_tokenized_len
 # TODO - if time permits add retriever logic
+# TODO - don't forget in readme to specify env variables roles
 
 def set_seeds(seed):
     torch.random.manual_seed(seed)
@@ -55,7 +62,7 @@ def validate_namespace(namespace):
     if namespace.algorithm == 'ppo':
         assert namespace.baseline, "PPO requires baseline"
 
-
+# TODO - log the device!!!
 # TODO - log used config
 # TODO - verify models_dir and model_name args
 # TODO - encapsulate with logger init parts and important prints

@@ -1,8 +1,11 @@
+import logging
 import os
 from abc import abstractmethod
 import torch
 from transformers import AutoTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 import openai
+
+logger = logging.getLogger('root')
 
 
 class LLMModel:
@@ -13,6 +16,7 @@ class LLMModel:
         self.model = None
         self.tokenizer = None
         self.max_prompt_tokenized_len = 0
+        logger.info(f"Loading llm model {self.model_name=}")
 
     # TODO - model that doesn't support this tokenization should override this logic
     def is_prompt_too_long(self, prompt):
@@ -116,4 +120,5 @@ class LLMFactory:
         if model_name in AVAILABLE_LLM_MODELS:
             return AVAILABLE_LLM_MODELS[model_name]()
         else:
+            logger.error(f"Model {model_name} not supported!")
             raise ValueError(f"Model {model_name} not supported!")
