@@ -21,7 +21,7 @@ class PolicyGradient(object):
     Class for implementing a policy gradient algorithm
     """
 
-    def __init__(self, env, config, logger):
+    def __init__(self, env, config):
         """
         Initialize Policy Gradient Class
 
@@ -37,8 +37,6 @@ class PolicyGradient(object):
         # store hyperparameters
         self.config = config
 
-        # TODO - check this logger, use my own logger instead
-        self.logger = logger
         self.env = env
 
         # discrete vs continuous action space

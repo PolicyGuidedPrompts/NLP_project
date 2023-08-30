@@ -63,10 +63,6 @@ def validate_namespace(namespace):
         assert namespace.baseline, "PPO requires baseline"
 
 
-# TODO - log the device!!!
-# TODO - log used config
-# TODO - verify models_dir and model_name args
-# TODO - encapsulate with logger init parts and important prints
 if __name__ == "__main__":
     namespace = parser.parse_args()
     validate_namespace(namespace)
@@ -91,8 +87,7 @@ if __name__ == "__main__":
 
     # TODO - maybe use factory here as well
     policy_search_algorithms = {'pg': PolicyGradient, 'ppo': PPO}
-    policy_search_algorithm = policy_search_algorithms[namespace.algorithm](env, config,
-                                                                            logger)  # TODO - fix PPO seed logic
+    policy_search_algorithm = policy_search_algorithms[namespace.algorithm](env, config)
     policy_search_algorithm.run()
 
 # TODO - clean repo from garbage

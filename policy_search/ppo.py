@@ -8,8 +8,8 @@ from policy_search.ppo_episode import PPOEpisode
 
 class PPO(PolicyGradient):
 
-    def __init__(self, env, config, seed):
-        super(PPO, self).__init__(env, config, seed)
+    def __init__(self, env, config):
+        super(PPO, self).__init__(env, config)
 
     def update_policy(self, observations, actions, advantages, old_logprobs):
         """
