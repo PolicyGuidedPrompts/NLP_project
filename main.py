@@ -15,7 +15,7 @@ from general import get_logger
 
 ALLOWED_DATASETS = ['wics/strategy-qa']
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5'
-ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased
+ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-en','gte-large'
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 
 parser = argparse.ArgumentParser()
@@ -57,6 +57,7 @@ def validate_namespace(namespace):
         assert namespace.baseline, "PPO requires baseline"
 
 
+# TODO - log used config
 # TODO - verify models_dir and model_name args
 # TODO - encapsulate with logger init parts and important prints
 if __name__ == "__main__":
