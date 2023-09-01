@@ -30,7 +30,6 @@ class BasePolicy:
             sampled_action: np.array of shape (1, *shape of action)
             log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
         """
-        # TODO - can't generate same action more than once
         observation = np2torch(observation)
         action_distribution = self.action_distribution(observation)
 

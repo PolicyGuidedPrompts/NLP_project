@@ -3,13 +3,10 @@ import logging
 import gym
 from gym.spaces import Discrete, Box
 
-# TODO - training_dataset + llm should be defined from configuration file
 # TODO - Deberta tokenizer and model
 
-# TODO - maybe train encoder as well
 # TODO - speak with Nachum about Masters partition slurm
 
-# TODO - add reward metric to config
 # TODO - punish on long episodes
 
 # TODO
@@ -66,13 +63,12 @@ class Environment(gym.Env):
 
         return self.encoder.encode(self.question).detach().numpy(), reward, done, generated_answer
 
-    # TODO - this should return a batch instead of a single observation
     def reset(self, *, seed=None, options=None):
         sample = self.dataset.data.sample(1).iloc[0]
         self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
         return self.encoder.encode(self.question).detach().numpy()
 
-    # TODO - try running heavier model on colab and slurm
+    # TODO - hyper parameters as well as n_layers and heavier models try on slurm
     def evaluate_prompt(self):
         generated_answer = self.llm.generate_answer(self.question)
         logger.debug(f"\nPrompt:\n{self.question}\n"

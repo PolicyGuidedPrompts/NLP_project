@@ -46,8 +46,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
 
-# TODO - add logic for different datasets
-# TODO - add logic for different llms + max_prompt_tokenized_len
+# TODO - different llms max_prompt_tokenized_len
 # TODO - if time permits add retriever logic
 # TODO - don't forget in readme to specify env variables roles
 
@@ -58,7 +57,7 @@ def set_seeds(seed):
 
 
 # TODO - create dataloader and somehow keep logic the same
-# TODO - we want this as chain of responsibility <- leave this, create predetermined configuration files instead
+# TODO - create predetermined configuration files instead that work together
 def validate_namespace(namespace):
     if namespace.algorithm == 'ppo':
         assert namespace.baseline, "PPO requires baseline"
@@ -86,10 +85,8 @@ if __name__ == "__main__":
         seed=namespace.seed,
     )
 
-    # TODO - maybe use factory here as well
     policy_search_algorithms = {'pg': PolicyGradient, 'ppo': PPO}
     policy_search_algorithm = policy_search_algorithms[namespace.algorithm](env, config)
     policy_search_algorithm.run()
 
 # TODO - clean repo from garbage
-# TODO - make sure models are being loaded instead of downloaded

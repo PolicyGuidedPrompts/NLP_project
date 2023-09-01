@@ -90,7 +90,6 @@ class PPO(PolicyGradient):
         episode = PPOEpisode()
         done = False
 
-        # TODO - this have to be batched and the episode.add should be a numpy operation
         while not done:
             action, old_logprob = self.policy.act(observation.reshape(1, -1), return_log_prob=True)
             next_observation, reward, done, _ = self.env.step(action.item())
@@ -99,8 +98,6 @@ class PPO(PolicyGradient):
 
         return episode
 
-    # TODO - use Episode class
-    # TODO - multiple places using env instead of self.env
     def sample_episodes(self):
         episodes = []
         t = 0

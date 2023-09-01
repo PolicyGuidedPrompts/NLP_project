@@ -15,7 +15,6 @@ from utils.utils import CaptureStdout
 logger = logging.getLogger('root')
 
 
-# TODO - remove unneeded imports
 class PolicyGradient(object):
     """
     Class for implementing a policy gradient algorithm
@@ -74,28 +73,11 @@ class PolicyGradient(object):
 
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
 
-    def update_averages(self, rewards, scores_eval):
-        """
-        Update the averages.
-
-        Args:
-            rewards: deque
-            scores_eval: list
-        """
-        self.avg_reward = np.mean(rewards)
-        self.max_reward = np.max(rewards)
-        self.std_reward = np.sqrt(np.var(rewards) / len(rewards))
-
-        if len(scores_eval) > 0:
-            self.eval_reward = scores_eval[-1]
-
-    # TODO - maybe create an episode class
     def sample_episode(self):
         observation = self.env.reset()
         episode = Episode()
         done = False
 
-        # TODO - this have to be batched and the episode.add should be a numpy operation
         while not done:
             action, _ = self.policy.act(observation.reshape(1, -1))
             next_observation, reward, done, _ = self.env.step(action.item())
@@ -104,8 +86,6 @@ class PolicyGradient(object):
 
         return episode
 
-    # TODO - thing if I can generate a batch of episodes at once
-    # TODO - info is actually the generated answer
     def sample_episodes(self):
         episodes = []
         t = 0

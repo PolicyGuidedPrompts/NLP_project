@@ -18,7 +18,7 @@ class LLMModel:
         self.max_prompt_tokenized_len = 0
         logger.info(f"Loading llm model {self.model_name=}")
 
-    # TODO - model that doesn't support this tokenization should override this logic
+    # model that doesn't support this tokenization should override this logic
     def is_prompt_too_long(self, prompt):
         tokenized = self.tokenizer(prompt, return_tensors="pt", truncation=True, padding=True)
         tokenized_len = tokenized['input_ids'].shape[1]
