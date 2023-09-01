@@ -1,13 +1,7 @@
 import logging
-import os
 
 import gym
-import openai
 from gym.spaces import Discrete, Box
-
-openai.api_key = os.environ.get('OPENAI_API_KEY')
-if not openai.api_key:
-    raise ValueError("Please set the OPENAI_API_KEY environment variable.")
 
 # TODO - training_dataset + llm should be defined from configuration file
 # TODO - Deberta tokenizer and model
@@ -37,7 +31,7 @@ class Environment(gym.Env):
         self.llm = llm
         self.terminate_action = terminate_action
 
-        self.action_space = Discrete(len(self.dataset) + 1)  # +1 for terminate action
+        self.action_space = Discrete(len(self.dataset.data) + 1)  # +1 for terminate action
 
         # Define observation space based on a sample observation
         sample_observation = self.encoder.encode("Sample question for shape determination").numpy()
@@ -54,7 +48,7 @@ class Environment(gym.Env):
                     f"{self.encoder.model_name=})")
 
     def _update_prompt_based_on_action(self, action):
-        sampled_question, sampled_answer = self.dataset.iloc[action]
+        sampled_question, sampled_answer = self.dataset.data.iloc[action]
         self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
 
     def step(self, action):
@@ -74,13 +68,9 @@ class Environment(gym.Env):
 
     # TODO - this should return a batch instead of a single observation
     def reset(self, *, seed=None, options=None):
-        sample = self.dataset.sample(1).iloc[0]
+        sample = self.dataset.data.sample(1).iloc[0]
         self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
         return self.encoder.encode(self.question).detach().numpy()
-
-    # TODO - implement this per defined config metric
-    def score_generated_answer(self, generated_answer):
-        return NotImplemented
 
     # TODO - try running heavier model on colab and slurm
     def evaluate_prompt(self):
@@ -89,8 +79,6 @@ class Environment(gym.Env):
                      f"Generated answer:\n{generated_answer}\n"
                      f"Ground truth:\n{self.ground_truth}\n")
 
-        # TODO - based on configured reward metric, mainly determined by the dataset
-        if generated_answer == self.ground_truth:
-            return 1, generated_answer
-        else:
-            return -1, generated_answer
+        reward = self.dataset.score(self.ground_truth, generated_answer)
+
+        return reward, generated_answer

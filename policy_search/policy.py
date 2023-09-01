@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from network_utils import np2torch
+from utils.network_utils import np2torch
 
 
 class BasePolicy:

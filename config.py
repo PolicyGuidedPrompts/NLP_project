@@ -17,7 +17,7 @@ class Config:
         self.retriever = namespace.retriever
 
         # Algorithm part
-        self.algorithm = namespace.algorithm  # TODO - PPO or PG or REINFORCE
+        self.algorithm = namespace.algorithm
         # hyperparameters for PPO
         self.eps_clip = namespace.eps_clip
         self.update_freq = namespace.update_freq
@@ -47,12 +47,6 @@ class Config:
         self.log_path = self.output_path + "log.txt"
         self.scores_output = self.output_path + "scores.npy"
         self.plot_output = self.output_path + "scores.png"
-
-        # TODO Record part
-        # self.record = False
-        # self.record_path = self.output_path
-        # self.record_freq = 5
-        # self.summary_freq = 1
 
 
 def get_config(namespace):

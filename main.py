@@ -6,16 +6,16 @@ import numpy as np
 import torch
 
 from config import get_config
-from dataset.dataset import DatasetFactory
+from dataset.dataset import DatasetFactory, AVAILABLE_DATASETS
 from encoder_model.encoder_model import EncoderFactory, AVAILABLE_ENCODERS
-from env import Environment
+from environment.env import Environment
 from llm_model.llm_model import LLMFactory, AVAILABLE_LLM_MODELS
-from network_utils import device
+from utils.network_utils import device
 from policy_search.policy_gradient import PolicyGradient
 from policy_search.ppo import PPO
 from utils.utils import get_logger
 
-ALLOWED_DATASETS = ['wics/strategy-qa']
+ALLOWED_DATASETS = AVAILABLE_DATASETS.keys()  # 'strategy-qa','squad','trivia-qa'
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5'
 ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-en','gte-large'
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
@@ -57,6 +57,7 @@ def set_seeds(seed):
     random.seed(seed)
 
 
+# TODO - create dataloader and somehow keep logic the same
 # TODO - we want this as chain of responsibility <- leave this, create predetermined configuration files instead
 def validate_namespace(namespace):
     if namespace.algorithm == 'ppo':

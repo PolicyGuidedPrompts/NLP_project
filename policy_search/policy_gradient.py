@@ -4,9 +4,9 @@ import os
 import numpy as np
 import torch
 
-from baseline_network import BaselineNetwork
-from network_utils import build_mlp, device, np2torch
-from policy import CategoricalPolicy
+from policy_search.baseline_network import BaselineNetwork
+from utils.network_utils import build_mlp, device, np2torch
+from policy_search.policy import CategoricalPolicy
 from policy_search.episode import Episode
 from torchsummary import summary
 
@@ -31,6 +31,7 @@ class PolicyGradient(object):
                 logger: logger instance from the logging module
         """
         # directory for training outputs
+
         if not os.path.exists(config.output_path):
             os.makedirs(config.output_path)
 
@@ -87,10 +88,6 @@ class PolicyGradient(object):
 
         if len(scores_eval) > 0:
             self.eval_reward = scores_eval[-1]
-
-    # TODO - remove this method
-    def record_summary(self, t):
-        pass
 
     # TODO - maybe create an episode class
     def sample_episode(self):
@@ -221,19 +218,29 @@ class PolicyGradient(object):
         # advantage will depend on the baseline implementation
         advantages = self.calculate_advantage(returns, observations)
 
-        return observations, actions, returns, advantages
+        batch_rewards = np.array([episode.total_reward for episode in episodes])
 
-    # TODO - add checkpoint logic and save model every x timestamps
+        return observations, actions, returns, advantages, batch_rewards
+
+    # TODO - save model every x timestamps
     def train(self):
+        averaged_total_rewards = []
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes()
-            observations, actions, returns, advantages = self.merge_episodes_to_batch(episodes)
+            observations, actions, returns, advantages, batch_rewards = self.merge_episodes_to_batch(episodes)
 
             # run training operations
             if self.config.baseline:
                 self.baseline_network.update_baseline(returns, observations)
 
             self.update_policy(observations, actions, advantages)
+
+            avg_batch_reward = batch_rewards.mean()
+            msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
+                t, avg_batch_reward, batch_rewards.std()
+            )
+            averaged_total_rewards.append(avg_batch_reward)
+            logger.info(msg)
 
     def evaluate(self, env=None, num_episodes=1):
         pass
@@ -246,32 +253,10 @@ class PolicyGradient(object):
         # self.logger.info(msg)
         # return avg_reward
 
-    def record(self):
-        pass
-        # """
-        # Recreate an env and record a video for one episode
-        # """
-        # env = gym.make(self.config.env_name)
-        # env.seed(self.seed)
-        # env = gym.wrappers.Monitor(
-        #     env, self.config.record_path, video_callable=lambda x: True, resume=True
-        # )
-        # self.evaluate(env, 1)
-
     def run(self):
         """
         Apply procedures of training for a PG.
         """
-        # record one game at the beginning
-        # TODO think of removing record option
-        # if self.config.record:
-        #     self.record()
-        # model
         logger.info("Training started...")
         self.train()
         logger.info("Training completed...")
-        # record one game at the end
-        # TODO think of removing record option
-
-        # if self.config.record:
-        #     self.record()

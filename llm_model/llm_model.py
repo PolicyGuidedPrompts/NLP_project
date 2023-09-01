@@ -78,6 +78,10 @@ class GPT2LLM(LLMModel):
 
 
 class GPT35TurboLLM0613(LLMModel):
+    openai.api_key = os.environ.get('OPENAI_API_KEY')
+    if not openai.api_key:
+        raise ValueError("Please set the OPENAI_API_KEY environment variable.")
+
     model_name = "gpt-3.5-turbo-0613"
 
     def __init__(self):

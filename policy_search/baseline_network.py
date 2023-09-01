@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from network_utils import build_mlp, np2torch
+from utils.network_utils import build_mlp, np2torch
 from torchsummary import summary
 
 from utils.utils import CaptureStdout
@@ -13,10 +13,6 @@ logger = logging.getLogger('root')
 
 
 class BaselineNetwork(nn.Module):
-    """
-    Class for implementing Baseline network
-    """
-
     def __init__(self, env, config):
         super().__init__()
         self.config = config

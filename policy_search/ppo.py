@@ -1,9 +1,13 @@
+import logging
+
 import numpy as np
 import torch
 
-from network_utils import np2torch
+from utils.network_utils import np2torch
 from policy_search.policy_gradient import PolicyGradient
 from policy_search.ppo_episode import PPOEpisode
+
+logger = logging.getLogger('root')
 
 
 class PPO(PolicyGradient):
@@ -41,7 +45,6 @@ class PPO(PolicyGradient):
         # Compute the PPO objective function
         loss = -torch.min(ratio * advantages, clipped_advantage).mean()
 
-        # Zero out old gradients, backpropagate the new gradients and step
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -57,18 +60,30 @@ class PPO(PolicyGradient):
         # advantage will depend on the baseline implementation
         advantages = self.calculate_advantage(returns, observations)
 
-        return observations, actions, returns, advantages, old_logprobs
+        batch_rewards = np.array([episode.total_reward for episode in episodes])
+
+        return observations, actions, returns, advantages, batch_rewards, old_logprobs
 
     def train(self):
+        averaged_total_rewards = []
+
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes()
-            observations, actions, returns, advantages, old_logprobs = self.merge_episodes_to_batch(episodes)
+            observations, actions, returns, advantages, batch_rewards, old_logprobs = self.merge_episodes_to_batch(
+                episodes)
 
             # run training operations
             for k in range(self.config.update_freq):
                 self.baseline_network.update_baseline(returns, observations)
                 self.update_policy(observations, actions, advantages,
                                    old_logprobs)
+
+            avg_batch_reward = batch_rewards.mean()
+            msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
+                t, avg_batch_reward, batch_rewards.std()
+            )
+            averaged_total_rewards.append(avg_batch_reward)
+            logger.info(msg)
 
     def sample_episode(self):
         observation = self.env.reset()
