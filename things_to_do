@@ -1,46 +1,19 @@
 Benchmarking
 
-Must check that everything regarding grad and numpy to torch has been done correctly.
-Think when with torch no grad is required!!!!!!!!!!!!!
-
-Make sure everything is float32
-
 Have to make sure everything is on device, ask GPT how to verify this easily
-
-When prompt too long, must choose special action
-
-caching dir of torch and HuggingFace
-
-discount factor for punishing the agent for taking too long
-
-do not repeat the same action
 
 Maybe try Experience Replay
 
-Currently out Agent doesn't keep track of the original question.
+Currently our Agent doesn't keep track of the original question.
 We might want an agent that keep the original question and only add the new information to it.
 
-Batching when training the agent (the PolicyNet)
-
-Make the code way faster
-
 How good is the algorithm compared to simply adding questions+answers by random (I.e check against context learning with no training)
-
-Different datasets + tasks
-
-Different rewards models
-
-Different models for the agent
-
-Different encoder models
-
-Different LLM models
 
 Split train test
 
 Hyperparameter tuning
 
-Different policy search algorithms (e.g. REINFORCE, Vanilla Policy Gradient + BaseLine, PPO, DQN, A2C, etc.)
+Different policy search algorithms (Maybe add DQN/TRPO)
 
 Continuous action space
 
@@ -48,44 +21,21 @@ Make sure Agent doesn't choose questions that simply returns True all the time w
 
 Make sure actions doesn't repeat in same episode
 
-Configuration file, make it easy to change from outside
-
-Code to change dynamically if cuda available or not
-
 Add retrievers to the pipeline
 
 Add description and not only the question to the prompt
 
 Think about adding 4 last prompts as part of the state
 
-Think about all the places where there are torch no grad etc.. make sure not to use them when not needed
-
-Log prompts that get into the model
-Log generated answers
-
 Missing our epsilon greedy method
 
-Think how can make model to evaluate on prompts early on
-
-Evaluation Metrics
-
-Add logging to the code with levels
-
 Add wandb
-
-Change
-
-UNDERSTAND WHY MODEL STOPPED PREDICTING TRUE/FALSE ANSWERS
-
-Make configuration defaults, dev/prod if necessary
 
 Make configuration YAML file
 
 Install script for the entire github project
 
 Create Readme
-
-Add git tag for dd517d9 - stable version without stanford files
 
 If time permits, read advanced options:
 https://platform.openai.com/docs/guides/gpt
