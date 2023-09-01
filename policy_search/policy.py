@@ -5,7 +5,7 @@ from utils.network_utils import np2torch
 
 
 class BasePolicy:
-    def action_distribution(self, observations):
+    def actions_distributions(self, observations):
         """
         Args:
             observations: torch.Tensor of shape [batch size, dim(observation space)]
@@ -22,24 +22,24 @@ class BasePolicy:
         """
         raise NotImplementedError
 
-    def act(self, observation, return_log_prob=False):
+    # TODO - fix docstrings, no batch size but num_episodes_in_batch
+    def act(self, observations, return_log_prob=False):
         """
         Args:
-            observation: np.array of shape (1, dim(observation space))
+            observations: np.array of shape [num_episodes_in_batch, dim(observation space)]
         Returns:
-            sampled_action: np.array of shape (1, *shape of action)
+            sampled_actions: np.array of shape [num_episodes_in_batch, *shape of action]
             log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
         """
-        # TODO - can't generate same action more than once
-        observation = np2torch(observation)
-        action_distribution = self.action_distribution(observation)
+        observations = np2torch(observations)
+        actions_distributions = self.actions_distributions(observations)
 
-        sampled_action = action_distribution.sample()
+        sampled_actions = actions_distributions.sample()
 
         # Used only to collect log_probs for old policy, not for the one being trained, hence detach().numpy()
-        log_probs = action_distribution.log_prob(sampled_action).detach().numpy() if return_log_prob else None
+        log_probs = actions_distributions.log_prob(sampled_actions).detach().numpy() if return_log_prob else None
 
-        return sampled_action.detach().numpy(), log_probs
+        return sampled_actions.detach().numpy(), log_probs
 
 
 # TODO - think if this CategoricalPolicy is even required
@@ -48,17 +48,17 @@ class CategoricalPolicy(BasePolicy, nn.Module):
         nn.Module.__init__(self)
         self.network = network
 
-    def action_distribution(self, observations):
+    def actions_distributions(self, observations):
         """
         Args:
             observations: torch.Tensor of shape [batch size, dim(observation space)]
         Returns:
-            distribution: torch.distributions.Categorical where the logits
+            distributions: torch.distributions.Categorical where the logits
                 are computed by self.network
         """
         logits = self.network(observations)
-        distribution = torch.distributions.Categorical(logits=logits)
-        return distribution
+        distributions = torch.distributions.Categorical(logits=logits)
+        return distributions
 
 
 class GaussianPolicy(BasePolicy, nn.Module):
@@ -75,7 +75,7 @@ class GaussianPolicy(BasePolicy, nn.Module):
         std = torch.exp(self.log_std)
         return std
 
-    def action_distribution(self, observations):
+    def actions_distributions(self, observations):
         """
         Args:
             observations: torch.Tensor of shape [batch size, dim(observation space)]

@@ -19,7 +19,7 @@ class BaselineNetwork(nn.Module):
         self.env = env
         self.baseline = self.config.baseline
         self.lr = self.config.learning_rate
-        observation_dim = self.env.observation_space.shape[0]
+        observation_dim = self.env.observation_dim
 
         # TODO - baseline network should have different parameters than policy network
         # Create the neural network baseline

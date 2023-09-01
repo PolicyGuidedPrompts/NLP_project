@@ -41,12 +41,13 @@ class BertEncoder(EncoderModel):
 
     def __init__(self):
         super().__init__(self.model_name)
+        self.output_dimension = 768
 
     def encode(self, text):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        return outputs.last_hidden_state[0, 0, :]
+        return outputs.last_hidden_state[:, 0, :]
 
 
 class BgeLargeEnEncoder(EncoderModel):
@@ -56,6 +57,7 @@ class BgeLargeEnEncoder(EncoderModel):
 
     def __init__(self):
         super().__init__(self.model_name)
+        self.output_dimension = 1024
 
     # TODO - read about this model https://huggingface.co/BAAI/bge-large-en
     def encode(self, text, s2p_retrieval=False):
@@ -75,6 +77,7 @@ class GteLargeEncoder(EncoderModel):
 
     def __init__(self):
         super().__init__(self.model_name)
+        self.output_dimension = 1024
 
     # TODO - read about this model https://huggingface.co/thenlper/gte-large
     def encode(self, text):

@@ -42,7 +42,7 @@ class PolicyGradient(object):
 
         # discrete vs continuous action space
         # TODO - should fix things here for continuous action space
-        self.observation_dim, self.action_dim = self.env.observation_space.shape[0], self.env.action_space.n
+        self.observation_dim, self.action_dim = self.env.observation_dim, self.env.action_dim
         self.lr = self.config.learning_rate
 
         self.init_policy()
@@ -89,18 +89,17 @@ class PolicyGradient(object):
         if len(scores_eval) > 0:
             self.eval_reward = scores_eval[-1]
 
-    # TODO - maybe create an episode class
     def sample_episode(self):
-        observation = self.env.reset()
+        observations = self.env.reset()
         episode = Episode()
         done = False
 
         # TODO - this have to be batched and the episode.add should be a numpy operation
         while not done:
-            action, _ = self.policy.act(observation.reshape(1, -1))
-            next_observation, reward, done, _ = self.env.step(action.item())
-            episode.add(observation, action.item(), reward)
-            observation = next_observation
+            actions, _ = self.policy.act(observations)
+            next_observation, reward, done, _ = self.env.step(actions)
+            episode.add(observations, actions.item(), reward)
+            observations = next_observation
 
         return episode
 
@@ -108,11 +107,9 @@ class PolicyGradient(object):
     # TODO - info is actually the generated answer
     def sample_episodes(self):
         episodes = []
-        t = 0
 
-        while t < self.config.batch_size:
+        for t in range(self.config.num_episodes_in_batch):
             episode = self.sample_episode()
-            t += len(episode)
             episodes.append(episode)
 
         return episodes
@@ -195,7 +192,7 @@ class PolicyGradient(object):
         advantages = np2torch(advantages)
 
         # Get log probabilities of the actions
-        action_dists = self.policy.action_distribution(observations)
+        action_dists = self.policy.actions_distributions(observations)
         log_probs = action_dists.log_prob(actions)
 
         # Zero out the gradients from the previous pass

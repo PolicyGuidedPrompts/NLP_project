@@ -37,7 +37,7 @@ parser.add_argument("--n_layers", type=int, default=1)
 parser.add_argument("--layer_size", type=int, default=64)
 parser.add_argument("--learning_rate", type=float, default=3e-2)
 parser.add_argument("--num_batches", type=int, default=100)  # number of batches trained on
-parser.add_argument("--batch_size", type=int, default=30)  # number of steps used to compute each policy update
+parser.add_argument("--num_episodes_in_batch", type=int, default=30)
 parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
 
@@ -80,6 +80,7 @@ if __name__ == "__main__":
     retriever_model = None  # TODO - add retriever logic
 
     env = Environment(
+        config=config,
         dataset=dataset,
         llm=llm,
         encoder=encoder,

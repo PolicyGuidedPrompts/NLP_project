@@ -24,38 +24,36 @@ logger = logging.getLogger('root')
 
 
 class Environment(gym.Env):
-    def __init__(self, dataset, llm, encoder, seed, terminate_action=0):
+    def __init__(self, config, dataset, llm, encoder, seed, terminate_action=0):
         super(Environment, self).__init__()
+        self.seed = seed
+        self.config = config
+
         self.dataset = dataset
         self.encoder = encoder
         self.llm = llm
+
         self.terminate_action = terminate_action
+        self.action_dim = len(self.dataset.data) + 1  # +1 for terminate action
+        self.observation_dim = self.encoder.output_dimension
 
-        self.action_space = Discrete(len(self.dataset.data) + 1)  # +1 for terminate action
-
-        # Define observation space based on a sample observation
-        sample_observation = self.encoder.encode("Sample question for shape determination").numpy()
-        self.observation_space = Box(low=-float('inf'), high=float('inf'), shape=sample_observation.shape,
-                                     dtype=sample_observation.dtype)
-
-        self.seed = seed
         self.reset()
         logger.info(f"Environment initialized with: "
                     f"({self.seed=}, "
-                    f"{self.action_space=}, "
-                    f"{self.observation_space=}, "
+                    f"{self.action_dim=}, "
+                    f"{self.observation_dim=}, "
                     f"{self.llm.model_name=}, "
                     f"{self.encoder.model_name=})")
 
-    def _update_prompt_based_on_action(self, action):
+    def _update_prompts_based_on_actions(self, action):
         sampled_question, sampled_answer = self.dataset.data.iloc[action]
         self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
 
-    def step(self, action):
-        if action == self.terminate_action:
+    def step(self, actions):
+        if actions == self.terminate_action:
             done = True
         else:
-            self._update_prompt_based_on_action(action)
+            self._update_prompts_based_on_actions(actions)
             done = self.llm.is_prompt_too_long(self.question)
 
         if done:
@@ -68,9 +66,17 @@ class Environment(gym.Env):
 
     # TODO - this should return a batch instead of a single observation
     def reset(self, *, seed=None, options=None):
-        sample = self.dataset.data.sample(1).iloc[0]
-        self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
-        return self.encoder.encode(self.question).detach().numpy()
+        samples = self.dataset.data.sample(self.config.num_episodes_in_batch)
+
+        # Format the questions and store them
+        self.questions = "Question: " + samples["question"] + "\nAnswer: "
+        self.questions = self.questions.tolist()
+        self.ground_truths = samples["answer"].tolist()
+
+        # Batch encoding of questions
+        batched_observations = self.encoder.encode(self.questions).detach().numpy()
+
+        return batched_observations
 
     # TODO - try running heavier model on colab and slurm
     def evaluate_prompt(self):

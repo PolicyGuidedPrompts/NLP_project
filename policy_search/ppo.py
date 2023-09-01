@@ -31,7 +31,7 @@ class PPO(PolicyGradient):
         old_logprobs = np2torch(old_logprobs)
 
         # Get the distribution of actions under the current policy
-        dist = self.policy.action_distribution(observations)
+        dist = self.policy.actions_distributions(observations)
 
         # Compute log probabilities for the actions
         new_logprobs = dist.log_prob(actions).squeeze()
@@ -103,11 +103,9 @@ class PPO(PolicyGradient):
     # TODO - multiple places using env instead of self.env
     def sample_episodes(self):
         episodes = []
-        t = 0
 
-        while t < self.config.batch_size:
+        for t in range(self.config.num_episodes_in_batch):
             episode = self.sample_episode()
-            t += len(episode)
             episodes.append(episode)
 
         return episodes

@@ -22,13 +22,14 @@ class Config:
         self.eps_clip = namespace.eps_clip
         self.update_freq = namespace.update_freq
 
+        # TODO - notion of batch size should be remove, num_episodes in batch + max_episode_len determines batch size
         # Policy + Baseline part
         self.n_layers = namespace.n_layers
         self.layer_size = namespace.layer_size
         self.learning_rate = namespace.learning_rate
         self.baseline = namespace.baseline
         self.num_batches = namespace.num_batches  # number of batches trained on
-        self.batch_size = namespace.batch_size  # number of steps used to compute each policy update
+        self.num_episodes_in_batch = namespace.num_episodes_in_batch  # number of episodes in a batch
         self.gamma = namespace.gamma  # the discount factor
         self.normalize_advantage = True
 
