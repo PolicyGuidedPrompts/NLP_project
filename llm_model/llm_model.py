@@ -15,14 +15,14 @@ class LLMModel:
     def __init__(self):
         self.model = None
         self.tokenizer = None
-        self.max_prompt_tokenized_len = 0
+        self.llm_max_prompt_tokenized_len = 0
         logger.info(f"Loading llm model {self.model_name=}")
 
     # model that doesn't support this tokenization should override this logic
     def is_prompt_too_long(self, prompt):
         tokenized = self.tokenizer(prompt, return_tensors="pt", truncation=True, padding=True)
         tokenized_len = tokenized['input_ids'].shape[1]
-        return tokenized_len > self.max_prompt_tokenized_len
+        return tokenized_len > self.llm_max_prompt_tokenized_len
 
     @abstractmethod
     def generate_answer(self, prompt):
@@ -37,7 +37,7 @@ class LLMModel:
 class GPT2LLM(LLMModel):
     model_name = "gpt2"
 
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
 
         model_dir = os.path.join(os.path.abspath(LLMModel.models_dir), self.model_name)
@@ -55,21 +55,21 @@ class GPT2LLM(LLMModel):
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        self.max_prompt_tokenized_len = 50
+        self.llm_max_prompt_tokenized_len = config.llm_max_prompt_tokenized_len
+        self.max_output_tokenized_len = config.llm_max_output_tokenized_len
+        self.temperature = config.llm_temperature
 
-    # TODO - google this and make sure it's correct
     def generate_answer(self, prompt):
-        # TODO check this max_length
-        inputs = self.tokenizer(prompt, return_tensors='pt', padding='max_length', truncation=True,
-                                max_length=self.max_prompt_tokenized_len)
+        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
         input_ids = inputs['input_ids']
         attention_mask = inputs['attention_mask']
 
-        # TODO check this max_length
-        # TODO - maybe allow adjusting temperature
         with torch.no_grad():
-            output = self.model.generate(input_ids, attention_mask=attention_mask, max_length=input_ids.shape[-1] + 50,
-                                         temperature=0.7)
+            output = self.model.generate(input_ids,
+                                         attention_mask=attention_mask,
+                                         early_stopping=True,
+                                         max_length=input_ids.shape[-1] + self.max_output_tokenized_len,
+                                         temperature=self.temperature)
 
         generated_answer = self.tokenizer.decode(
             output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
@@ -84,7 +84,7 @@ class GPT35TurboLLM0613(LLMModel):
 
     model_name = "gpt-3.5-turbo-0613"
 
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
 
         model_dir = os.path.join(os.path.abspath(LLMModel.models_dir), self.model_name)
@@ -100,14 +100,16 @@ class GPT35TurboLLM0613(LLMModel):
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        self.max_prompt_tokenized_len = 50
+        self.llm_max_prompt_tokenized_len = config.llm_max_prompt_tokenized_len
+        self.max_output_tokenized_len = config.llm_max_output_tokenized_len
+        self.temperature = config.llm_temperature
 
     def generate_answer(self, prompt):
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0613",
             messages=[{"role": "user", "content": prompt}],
-            # TODO - adjust this later
-            max_tokens=15  # Limit the output to 15 tokens
+            max_tokens=self.max_output_tokenized_len,
+            temperature=self.temperature
         )
         return response['choices'][0]['message']['content'].strip()
 
@@ -120,9 +122,9 @@ AVAILABLE_LLM_MODELS = {
 
 class LLMFactory:
     @staticmethod
-    def create_llm(model_name):
+    def create_llm(model_name, config):
         if model_name in AVAILABLE_LLM_MODELS:
-            return AVAILABLE_LLM_MODELS[model_name]()
+            return AVAILABLE_LLM_MODELS[model_name](config)
         else:
             logger.error(f"Model {model_name} not supported!")
             raise ValueError(f"Model {model_name} not supported!")

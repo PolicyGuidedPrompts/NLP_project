@@ -9,6 +9,9 @@ class Config:
 
         # LLM part
         self.llm_model = namespace.llm_model
+        self.llm_max_prompt_tokenized_len = namespace.llm_max_prompt_tokenized_len
+        self.llm_max_output_tokenized_len = namespace.llm_max_output_tokenized_len
+        self.llm_temperature = namespace.llm_temperature
 
         # Encoder part
         self.encoder_model = namespace.encoder_model

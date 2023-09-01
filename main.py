@@ -40,13 +40,16 @@ parser.add_argument("--num_batches", type=int, default=100)  # number of batches
 parser.add_argument("--batch_size", type=int, default=30)  # number of steps used to compute each policy update
 parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
+parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=50)
+parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
+parser.add_argument("--llm_temperature", type=float, default=0.7)
+
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
 
-# TODO - different llms max_prompt_tokenized_len
 # TODO - if time permits add retriever logic
 # TODO - don't forget in readme to specify env variables roles
 
@@ -74,7 +77,7 @@ if __name__ == "__main__":
     logger.info(f"Config returned: {config.__dict__}")
 
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
-    llm = LLMFactory.create_llm(model_name=namespace.llm_model)
+    llm = LLMFactory.create_llm(model_name=namespace.llm_model, config=config)
     encoder = EncoderFactory.create_encoder(model_name=namespace.encoder_model)
     retriever_model = None  # TODO - add retriever logic
 
