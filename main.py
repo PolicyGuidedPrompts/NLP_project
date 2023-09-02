@@ -50,6 +50,10 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
 
+# TODO - fix paths to relative
+# TODO - fix multiple devices
+# TODO  - remote interpreter!!!!!!!!!!!!!!!!
+
 # TODO - if time permits add retriever logic
 # TODO - don't forget in readme to specify env variables roles
 # TODO - logger should also log errors
