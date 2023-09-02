@@ -2,7 +2,7 @@ import logging
 import os
 from abc import abstractmethod
 import torch
-from transformers import AutoTokenizer, GPT2LMHeadModel, GPT2Tokenizer, BitsAndBytesConfig, AutoConfig
+from transformers import AutoTokenizer, GPT2LMHeadModel, GPT2Tokenizer, BitsAndBytesConfig, AutoConfig, AutoModelForCausalLM
 import openai
 
 logger = logging.getLogger('root')
@@ -92,7 +92,7 @@ class Llama2LLM(LLMModel):
 
         if all(os.path.exists(os.path.join(model_dir, file)) for file in required_files):
             self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
-            self.model = transformers.AutoModelForCausalLM.from_pretrained(model_dir)
+            self.model = AutoModelForCausalLM.from_pretrained(model_dir)
         else:
             self.bnb_config = BitsAndBytesConfig(
                 load_in_4bit=True,
@@ -103,21 +103,21 @@ class Llama2LLM(LLMModel):
 
             self.model_config = AutoConfig.from_pretrained(
                 self.model_path,
-                use_auth_token=hf_auth
+                use_auth_token=self.hf_auth
             )
 
-            self.model = transformers.AutoModelForCausalLM.from_pretrained(
+            self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_path,
                 trust_remote_code=True,
-                config=model_config,
-                quantization_config=bnb_config,
+                config=self.model_config,
+                quantization_config=self.bnb_config,
                 device_map='auto',
-                use_auth_token=hf_auth
+                use_auth_token=self.hf_auth
             )
             self.model.eval()
-            self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+            self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_path,
-                use_auth_token=hf_auth
+                use_auth_token=self.hf_auth
             )
 
             # Save the model and tokenizer to disk for future usage
