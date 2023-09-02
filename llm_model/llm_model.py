@@ -2,11 +2,12 @@ import logging
 import os
 from abc import abstractmethod
 import torch
-from transformers import AutoTokenizer, GPT2LMHeadModel, GPT2Tokenizer
+from transformers import AutoTokenizer, GPT2LMHeadModel, GPT2Tokenizer, BitsAndBytesConfig, AutoConfig
 import openai
 
 logger = logging.getLogger('root')
 
+# TODO - all models here, tokenizers, everything should move to device
 
 class LLMModel:
     models_dir = "./saved_models/llm_models"
@@ -28,6 +29,7 @@ class LLMModel:
     def generate_answer(self, prompt):
         pass
 
+    # TODO - think if the following even required:
     # TODO - implement this for each model (in gpt3.5 should be no-op)
     @abstractmethod
     def parse_answer(self, generated_answer):
@@ -61,6 +63,7 @@ class GPT2LLM(LLMModel):
 
     def generate_answer(self, prompt):
         inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
+        # TODO - check if these should be moved to device, ask chatGPT about entire code, what should be in device
         input_ids = inputs['input_ids']
         attention_mask = inputs['attention_mask']
 
@@ -74,6 +77,55 @@ class GPT2LLM(LLMModel):
         generated_answer = self.tokenizer.decode(
             output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
         )
+        return generated_answer.strip()
+
+class Llama2LLM(LLMModel):
+    model_name = 'meta-llama/Llama-2-7b-chat-hf'
+
+    # TODO - move to env variables
+    hf_auth = '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'
+
+    def __init__(self, config):
+        super().__init__()
+        self.bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type='nf4',
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_compute_dtype=torch.bfloat16
+        )
+
+        self.model_config = AutoConfig.from_pretrained(
+            self.model_name,
+            use_auth_token=hf_auth
+        )
+
+        self.model = transformers.AutoModelForCausalLM.from_pretrained(
+            self.model_name,
+            trust_remote_code=True,
+            config=model_config,
+            quantization_config=bnb_config,
+            device_map='auto',
+            use_auth_token=hf_auth
+        )
+        self.model.eval()
+
+        self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+            self.model_name,
+            use_auth_token=hf_auth
+        )
+
+    def generate_answer(self, prompt):
+        target_ids = self.tokenizer(prompt, return_tensors='pt')['input_ids'].to(device)
+        encodings = self.tokenizer(f'{prompt}', return_tensors='pt')
+        input_ids = encodings['input_ids'].to(device)
+        attention_mask = encodings['attention_mask'].to(device)
+
+        output = self.model.generate(input_ids, attention_mask=attention_mask, temperature=0.7)
+
+        generated_answer = tokenizer.decode(
+            output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
+        )
+
         return generated_answer.strip()
 
 
@@ -116,7 +168,8 @@ class GPT35TurboLLM0613(LLMModel):
 
 AVAILABLE_LLM_MODELS = {
     'gpt3.5': GPT35TurboLLM0613,
-    'gpt2': GPT2LLM
+    'gpt2': GPT2LLM,
+    'llama-2-7b':
 }
 
 
