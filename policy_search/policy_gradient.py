@@ -21,14 +21,6 @@ class PolicyGradient(object):
     """
 
     def __init__(self, env, config):
-        """
-        Initialize Policy Gradient Class
-
-        Args:
-                env: an OpenAI Gym environment
-                config: class with hyperparameters
-                logger: logger instance from the logging module
-        """
         # directory for training outputs
 
         if not os.path.exists(config.output_path):
@@ -41,7 +33,7 @@ class PolicyGradient(object):
 
         # discrete vs continuous action space
         # TODO - should fix things here for continuous action space
-        self.observation_dim, self.action_dim = self.env.observation_space.shape[0], self.env.action_space.n
+        self.observation_dim, self.action_dim = self.env.observation_space.shape[0], self.env.action_space
         self.lr = self.config.learning_rate
 
         self.init_policy()

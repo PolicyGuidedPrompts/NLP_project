@@ -52,6 +52,8 @@ logging.getLogger("openai").setLevel(logging.WARNING)
 
 # TODO - if time permits add retriever logic
 # TODO - don't forget in readme to specify env variables roles
+# TODO - logger should also log errors
+# TODO - see if can reduce size of requirements.txt
 
 def set_seeds(seed):
     torch.random.manual_seed(seed)

@@ -1,8 +1,5 @@
 import logging
 
-import gym
-from gym.spaces import Discrete, Box
-
 # TODO - Deberta tokenizer and model
 
 # TODO - speak with Nachum about Masters partition slurm
@@ -20,7 +17,7 @@ from gym.spaces import Discrete, Box
 logger = logging.getLogger('root')
 
 
-class Environment(gym.Env):
+class Environment:
     def __init__(self, dataset, llm, encoder, seed, terminate_action=0):
         super(Environment, self).__init__()
         self.dataset = dataset
@@ -28,12 +25,11 @@ class Environment(gym.Env):
         self.llm = llm
         self.terminate_action = terminate_action
 
-        self.action_space = Discrete(len(self.dataset.data) + 1)  # +1 for terminate action
+        self.action_space = len(self.dataset.data) + 1  # +1 for terminate action
 
         # Define observation space based on a sample observation
         sample_observation = self.encoder.encode("Sample question for shape determination").numpy()
-        self.observation_space = Box(low=-float('inf'), high=float('inf'), shape=sample_observation.shape,
-                                     dtype=sample_observation.dtype)
+        self.observation_space = sample_observation
 
         self.seed = seed
         self.reset()
