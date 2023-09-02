@@ -1,3 +1,7 @@
+import os
+import sys
+
+
 class Config:
     def __init__(self, namespace):
         # General part
@@ -35,21 +39,23 @@ class Config:
         self.gamma = namespace.gamma  # the discount factor
         self.normalize_advantage = True
 
+        # Get the directory where this script resides
+        self.BASE_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+        # Construct paths relative to this directory
         retriever_str = f"_retriever={self.retriever}" if self.retriever else ""
         baseline_str = f"_baseline={self.baseline}" if self.baseline else ""
-        # Output part
-        self.output_path = f"results/" \
-                           f"algorithm={self.algorithm}_" \
-                           f"dataset={self._dataset_name}_" \
-                           f"llm={self.llm_model}_" \
-                           f"encoder={self.encoder_model}" \
-                           f"{retriever_str}" \
-                           f"{baseline_str}" \
-                           f"/"
-        self.model_output = self.output_path + "model.weights/"
-        self.log_path = self.output_path + "log.txt"
-        self.scores_output = self.output_path + "scores.npy"
-        self.plot_output = self.output_path + "scores.png"
+        rel_output_path = os.path.join(
+            "results",
+            f"algorithm={self.algorithm}_dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}{retriever_str}{baseline_str}"
+        )
+        self.output_path = os.path.join(self.BASE_DIR, rel_output_path)
+
+        # Note: Using os.path.join ensures the path is constructed correctly for the operating system.
+        self.model_output = os.path.join(self.output_path, "model.weights")
+        self.log_path = os.path.join(self.output_path, "log.txt")
+        self.scores_output = os.path.join(self.output_path, "scores.npy")
+        self.plot_output = os.path.join(self.output_path, "scores.png")
 
 
 def get_config(namespace):

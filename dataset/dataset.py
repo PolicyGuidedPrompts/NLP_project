@@ -9,21 +9,21 @@ from sklearn.metrics import f1_score
 logger = logging.getLogger('root')
 
 
-# TODO - remember test part of dataset
 class Dataset(ABC):
-    datasets_dir = "./saved_datasets"
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    datasets_dir = os.path.join(BASE_DIR, "saved_datasets")
 
     def __init__(self):
-        dataset_dir = os.path.join(os.path.abspath(self.datasets_dir), self.dataset_name)
+        dataset_dir = os.path.join(self.datasets_dir, self.dataset_name)
 
         if os.path.exists(dataset_dir):
             self.data = self.load_from_disk(dataset_dir)
         else:
             self.data = self.load_from_repository()
+
             # Save the dataset
             if not os.path.exists(dataset_dir):
                 os.makedirs(dataset_dir)
-
             self.data.to_csv(os.path.join(dataset_dir, "data.csv"), index=False)
 
         logger.info(f"Loaded dataset {self.dataset_name=}, scoring method: {self.get_scoring_method_name()}")
