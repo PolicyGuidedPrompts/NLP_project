@@ -5,6 +5,8 @@ import torch
 from transformers import AutoTokenizer, GPT2LMHeadModel, GPT2Tokenizer, BitsAndBytesConfig, AutoConfig, AutoModelForCausalLM
 import openai
 
+from utils.network_utils import device
+
 logger = logging.getLogger('root')
 
 # TODO - all models here, tokenizers, everything should move to device
