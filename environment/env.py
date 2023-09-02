@@ -31,6 +31,7 @@ class Environment:
         sample_observation = self.encoder.encode("Sample question for shape determination").numpy()
         self.observation_space = sample_observation
 
+        # TODO - fix logger.info observation_space, action_space
         self.seed = seed
         self.reset()
         logger.info(f"Environment initialized with: "
