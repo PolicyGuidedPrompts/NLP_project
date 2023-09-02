@@ -12,22 +12,43 @@ logger = logging.getLogger('root')
 class LLMModel:
     models_dir = "./saved_models/llm_models"
 
-    @abstractmethod
-    def __init__(self):
+    def __init__(self, config):
         self.model = None
         self.tokenizer = None
-        self.llm_max_prompt_tokenized_len = 0
+        self.max_prompt_tokenized_len = config.llm_max_prompt_tokenized_len
+        self.max_output_tokenized_len = config.llm_max_output_tokenized_len
+        self.temperature = config.llm_temperature
         logger.info(f"Loading llm model {self.model_name=}")
 
     # model that doesn't support this tokenization should override this logic
     def is_prompt_too_long(self, prompt):
         tokenized = self.tokenizer(prompt, return_tensors="pt", truncation=True, padding=True)
         tokenized_len = tokenized['input_ids'].shape[1]
-        return tokenized_len > self.llm_max_prompt_tokenized_len
+        return tokenized_len > self.max_prompt_tokenized_len
 
-    @abstractmethod
+    # model that doesn't support this tokenization should override this logic
     def generate_answer(self, prompt):
-        pass
+        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
+        input_ids = inputs['input_ids'].to(device)
+        attention_mask = inputs['attention_mask'].to(device)
+
+        with torch.no_grad():
+            output = self.model.generate(input_ids,
+                                         attention_mask=attention_mask,
+                                         early_stopping=True,
+                                         max_new_tokens=self.max_output_tokenized_len,
+                                         temperature=self.temperature)
+
+        generated_answer = self.tokenizer.decode(
+            output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
+        )
+        return generated_answer.strip()
+
+    @property
+    def model_path(self):
+        if hasattr(self, 'repository'):
+            return os.path.join(self.repository, self.model_name)
+        return self.model_name
 
     # TODO - think if the following even required:
     # TODO - implement this for each model (in gpt3.5 should be no-op)
@@ -40,7 +61,7 @@ class GPT2LLM(LLMModel):
     model_name = "gpt2"
 
     def __init__(self, config):
-        super().__init__()
+        super().__init__(config)
 
         model_dir = os.path.join(os.path.abspath(LLMModel.models_dir), self.model_name)
 
@@ -49,84 +70,59 @@ class GPT2LLM(LLMModel):
             self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
             self.model = GPT2LMHeadModel.from_pretrained(model_dir)
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            self.model = GPT2LMHeadModel.from_pretrained(self.model_name)
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+            self.model = GPT2LMHeadModel.from_pretrained(self.model_path)
             self.tokenizer.save_pretrained(model_dir)
             self.model.save_pretrained(model_dir)
 
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        self.llm_max_prompt_tokenized_len = config.llm_max_prompt_tokenized_len
-        self.max_output_tokenized_len = config.llm_max_output_tokenized_len
-        self.temperature = config.llm_temperature
-
-    def generate_answer(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
-        # TODO - check if these should be moved to device, ask chatGPT about entire code, what should be in device
-        input_ids = inputs['input_ids']
-        attention_mask = inputs['attention_mask']
-
-        with torch.no_grad():
-            output = self.model.generate(input_ids,
-                                         attention_mask=attention_mask,
-                                         early_stopping=True,
-                                         max_length=input_ids.shape[-1] + self.max_output_tokenized_len,
-                                         temperature=self.temperature)
-
-        generated_answer = self.tokenizer.decode(
-            output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
-        )
-        return generated_answer.strip()
-
+# TODO - if I have time can make consistent with repository like in encoder and dataset
 class Llama2LLM(LLMModel):
-    model_name = 'meta-llama/Llama-2-7b-chat-hf'
-
-    # TODO - move to env variables
-    hf_auth = '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'
+    model_name = 'Llama-2-7b-chat-hf'
+    repository = 'meta-llama'
+    hf_auth = os.environ.get('HF_TOKEN')
 
     def __init__(self, config):
-        super().__init__()
-        self.bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type='nf4',
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=torch.bfloat16
-        )
+        super().__init__(config)
 
-        self.model_config = AutoConfig.from_pretrained(
-            self.model_name,
-            use_auth_token=hf_auth
-        )
+        model_dir = os.path.join(os.path.abspath(LLMModel.models_dir), self.model_name)
+        required_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.json"]
 
-        self.model = transformers.AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            trust_remote_code=True,
-            config=model_config,
-            quantization_config=bnb_config,
-            device_map='auto',
-            use_auth_token=hf_auth
-        )
-        self.model.eval()
+        if all(os.path.exists(os.path.join(model_dir, file)) for file in required_files):
+            self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+            self.model = transformers.AutoModelForCausalLM.from_pretrained(model_dir)
+        else:
+            self.bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type='nf4',
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_compute_dtype=torch.bfloat16
+            )
 
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(
-            self.model_name,
-            use_auth_token=hf_auth
-        )
+            self.model_config = AutoConfig.from_pretrained(
+                self.model_path,
+                use_auth_token=hf_auth
+            )
 
-    def generate_answer(self, prompt):
-        target_ids = self.tokenizer(prompt, return_tensors='pt')['input_ids'].to(device)
-        encodings = self.tokenizer(f'{prompt}', return_tensors='pt')
-        input_ids = encodings['input_ids'].to(device)
-        attention_mask = encodings['attention_mask'].to(device)
+            self.model = transformers.AutoModelForCausalLM.from_pretrained(
+                self.model_path,
+                trust_remote_code=True,
+                config=model_config,
+                quantization_config=bnb_config,
+                device_map='auto',
+                use_auth_token=hf_auth
+            )
+            self.model.eval()
+            self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+                self.model_path,
+                use_auth_token=hf_auth
+            )
 
-        output = self.model.generate(input_ids, attention_mask=attention_mask, temperature=0.7)
-
-        generated_answer = tokenizer.decode(
-            output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
-        )
-
-        return generated_answer.strip()
+            # Save the model and tokenizer to disk for future usage
+            self.tokenizer.save_pretrained(model_dir)
+            self.model.save_pretrained(model_dir)
 
 
 class GPT35TurboLLM0613(LLMModel):
@@ -137,7 +133,7 @@ class GPT35TurboLLM0613(LLMModel):
     model_name = "gpt-3.5-turbo-0613"
 
     def __init__(self, config):
-        super().__init__()
+        super().__init__(config)
 
         model_dir = os.path.join(os.path.abspath(LLMModel.models_dir), self.model_name)
 
@@ -152,9 +148,6 @@ class GPT35TurboLLM0613(LLMModel):
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        self.llm_max_prompt_tokenized_len = config.llm_max_prompt_tokenized_len
-        self.max_output_tokenized_len = config.llm_max_output_tokenized_len
-        self.temperature = config.llm_temperature
 
     def generate_answer(self, prompt):
         response = openai.ChatCompletion.create(
@@ -169,7 +162,7 @@ class GPT35TurboLLM0613(LLMModel):
 AVAILABLE_LLM_MODELS = {
     'gpt3.5': GPT35TurboLLM0613,
     'gpt2': GPT2LLM,
-    'llama-2-7b':
+    'llama-2-7b': Llama2LLM
 }
 
 
