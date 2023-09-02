@@ -8,13 +8,11 @@ logger = logging.getLogger('root')
 
 
 class EncoderModel:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DEFAULT_MODELS_DIR = os.path.join(BASE_DIR, "saved_models", "encoder_models")
+    models_dir = "./saved_models/encoder_models"
 
     def __init__(self, model_name):
         self.model_name = model_name
-        self.models_dir = self.DEFAULT_MODELS_DIR
-        model_dir = os.path.join(self.models_dir, self.model_name)
+        model_dir = os.path.join(os.path.abspath(self.models_dir), self.model_name)
         logger.info(f"Loading encoder model {self.model_name=}")
 
         required_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.json"]
