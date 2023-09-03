@@ -57,7 +57,7 @@ class PolicyGradient(object):
             output_size=self.action_dim,
             n_layers=self.config.n_layers,
             size=self.config.layer_size
-        ).to(device)
+        )
 
         self.policy = CategoricalPolicy(self._network).to(device)
 

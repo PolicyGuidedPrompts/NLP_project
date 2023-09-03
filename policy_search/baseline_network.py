@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils.network_utils import build_mlp, np2torch
+from utils.network_utils import build_mlp, np2torch, device
 from torchsummary import summary
 
 from utils.utils import CaptureStdout
@@ -28,7 +28,7 @@ class BaselineNetwork(nn.Module):
             output_size=1,
             n_layers=self.config.n_layers,
             size=self.config.layer_size
-        )
+        ).to(device)
 
         with CaptureStdout() as capture:
             summary(self.network, input_size=(observation_dim,))

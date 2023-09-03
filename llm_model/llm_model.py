@@ -39,7 +39,7 @@ class LLMModel:
                                          attention_mask=attention_mask,
                                          early_stopping=True,
                                          max_new_tokens=self.max_output_tokenized_len,
-                                         temperature=self.temperature)
+                                         temperature=self.temperature).cpu()
 
         generated_answer = self.tokenizer.decode(
             output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
@@ -76,6 +76,8 @@ class GPT2LLM(LLMModel):
             self.model = GPT2LMHeadModel.from_pretrained(self.model_path)
             self.tokenizer.save_pretrained(model_dir)
             self.model.save_pretrained(model_dir)
+
+        self.model = self.model.to(device)
 
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -116,6 +118,7 @@ class Llama2LLM(LLMModel):
                 device_map='auto',
                 use_auth_token=self.hf_auth
             )
+            self.model = self.model.to(device)
             self.model.eval()
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_path,

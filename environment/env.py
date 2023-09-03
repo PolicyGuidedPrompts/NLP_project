@@ -28,7 +28,7 @@ class Environment:
         self.action_space = len(self.dataset.data) + 1  # +1 for terminate action
 
         # Define observation space based on a sample observation
-        sample_observation = self.encoder.encode("Sample question for shape determination").numpy()
+        sample_observation = self.encoder.encode("Sample question for shape determination")
         self.observation_space = sample_observation
 
         # TODO - fix logger.info observation_space, action_space
@@ -58,12 +58,12 @@ class Environment:
             reward = 0
             generated_answer = None
 
-        return self.encoder.encode(self.question).detach().numpy(), reward, done, generated_answer
+        return self.encoder.encode(self.question), reward, done, generated_answer
 
     def reset(self, *, seed=None, options=None):
         sample = self.dataset.data.sample(1).iloc[0]
         self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
-        return self.encoder.encode(self.question).detach().numpy()
+        return self.encoder.encode(self.question)
 
     # TODO - hyper parameters as well as n_layers and heavier models try on slurm
     def evaluate_prompt(self):

@@ -4,6 +4,8 @@ from abc import abstractmethod
 import torch
 from transformers import AutoTokenizer, AutoModel
 
+from utils.network_utils import device
+
 logger = logging.getLogger('root')
 
 
@@ -25,6 +27,8 @@ class EncoderModel:
             self.tokenizer.save_pretrained(model_dir)
             self.model.save_pretrained(model_dir)
 
+        self.model = self.model.to(device)
+
     @abstractmethod
     def encode(self, text):
         pass
@@ -43,10 +47,10 @@ class BertEncoder(EncoderModel):
         super().__init__(self.model_name)
 
     def encode(self, text):
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        return outputs.last_hidden_state[0, 0, :]
+        return outputs.last_hidden_state[0, 0, :].detach().numpy()
 
 
 class BgeLargeEnEncoder(EncoderModel):
@@ -61,12 +65,12 @@ class BgeLargeEnEncoder(EncoderModel):
     def encode(self, text, s2p_retrieval=False):
         if s2p_retrieval:
             text = self.query_instruction + text
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
         sentence_embeddings = outputs[0][:, 0]
         sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
-        return sentence_embeddings.squeeze()
+        return sentence_embeddings.squeeze().detach().numpy()
 
 
 class GteLargeEncoder(EncoderModel):
@@ -78,12 +82,12 @@ class GteLargeEncoder(EncoderModel):
 
     # TODO - read about this model https://huggingface.co/thenlper/gte-large
     def encode(self, text):
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
         attention_mask = inputs['attention_mask']
         last_hidden = outputs.last_hidden_state.masked_fill(~attention_mask[..., None].bool(), 0.0)
-        return (last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]).squeeze()
+        return (last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]).squeeze().detach().numpy()
 
 
 AVAILABLE_ENCODERS = {
