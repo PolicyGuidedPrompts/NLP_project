@@ -82,12 +82,12 @@ class Llama2LLM(LLMModel):
     def __init__(self, config):
         super().__init__(config)
 
-        self.bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type='nf4',
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=torch.bfloat16
-        )
+        # self.bnb_config = BitsAndBytesConfig(
+        #     load_in_4bit=True,
+        #     bnb_4bit_quant_type='nf4',
+        #     bnb_4bit_use_double_quant=True,
+        #     bnb_4bit_compute_dtype=torch.bfloat16
+        # )
 
         self.model_config = AutoConfig.from_pretrained(
             self.model_path,
@@ -99,7 +99,7 @@ class Llama2LLM(LLMModel):
             self.model_path,
             trust_remote_code=True,
             config=self.model_config,
-            quantization_config=self.bnb_config,
+            # quantization_config=self.bnb_config,
             device_map='auto',
             use_auth_token=self.hf_auth,
             cache_dir=self.models_dir
@@ -110,6 +110,9 @@ class Llama2LLM(LLMModel):
             use_auth_token=self.hf_auth,
             cache_dir=self.models_dir
         )
+
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
 
 
 class GPT35TurboLLM0613(LLMModel):

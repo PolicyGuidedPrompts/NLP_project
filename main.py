@@ -15,6 +15,9 @@ from policy_search.policy_gradient import PolicyGradient
 from policy_search.ppo import PPO
 from utils.utils import get_logger
 
+# TODO - epsilon greedy
+# TODO - minimize requirements
+
 ALLOWED_DATASETS = AVAILABLE_DATASETS.keys()  # 'strategy-qa','squad','trivia-qa'
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5','llama-2-7b'
 ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-en','gte-large'

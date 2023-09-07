@@ -42,7 +42,7 @@ class BertEncoder(EncoderModel):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        return outputs.last_hidden_state[0, 0, :].detach().numpy()
+        return outputs.last_hidden_state[0, 0, :].detach().cpu().numpy()
 
 
 class BgeLargeEnEncoder(EncoderModel):
@@ -62,7 +62,7 @@ class BgeLargeEnEncoder(EncoderModel):
             outputs = self.model(**inputs)
         sentence_embeddings = outputs[0][:, 0]
         sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
-        return sentence_embeddings.squeeze().detach().numpy()
+        return sentence_embeddings.squeeze().detach().cpu().numpy()
 
 
 class GteLargeEncoder(EncoderModel):
@@ -79,7 +79,7 @@ class GteLargeEncoder(EncoderModel):
             outputs = self.model(**inputs)
         attention_mask = inputs['attention_mask']
         last_hidden = outputs.last_hidden_state.masked_fill(~attention_mask[..., None].bool(), 0.0)
-        return (last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]).squeeze().detach().numpy()
+        return (last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]).squeeze().detach().cpu().numpy()
 
 
 AVAILABLE_ENCODERS = {

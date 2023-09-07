@@ -70,7 +70,7 @@ class BaselineNetwork(nn.Module):
         predicted_values = self(observations)
 
         # Compute the advantage estimates
-        advantages = returns - predicted_values.detach().numpy()
+        advantages = returns - predicted_values.detach().cpu().numpy()
 
         return advantages
 

@@ -36,9 +36,9 @@ class BasePolicy:
         sampled_action = action_distribution.sample()
 
         # Used only to collect log_probs for old policy, not for the one being trained, hence detach().numpy()
-        log_probs = action_distribution.log_prob(sampled_action).detach().numpy() if return_log_prob else None
+        log_probs = action_distribution.log_prob(sampled_action).detach().cpu().numpy() if return_log_prob else None
 
-        return sampled_action.detach().numpy(), log_probs
+        return sampled_action.detach().cpu().numpy(), log_probs
 
 
 # TODO - think if this CategoricalPolicy is even required
