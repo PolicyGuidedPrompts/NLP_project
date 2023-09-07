@@ -33,7 +33,7 @@ class PolicyGradient(object):
 
         # discrete vs continuous action space
         # TODO - should fix things here for continuous action space
-        self.observation_dim, self.action_dim = self.env.observation_space.shape[0], self.env.action_space
+        self.observation_dim, self.action_dim = self.env.observation_space, self.env.action_space
         self.lr = self.config.learning_rate
 
         self.init_policy()

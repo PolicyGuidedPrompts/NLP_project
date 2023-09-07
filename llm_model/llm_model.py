@@ -11,8 +11,6 @@ from utils.network_utils import device
 logger = logging.getLogger('root')
 
 
-# TODO - all models here, tokenizers, everything should move to device
-
 class LLMModel:
     script_dir = os.path.dirname(os.path.realpath(__file__))
     models_dir = os.path.join(script_dir, "../saved_models/llm_models")
@@ -76,7 +74,6 @@ class GPT2LLM(LLMModel):
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
 
-# TODO - if I have time can make consistent with repository like in encoder and dataset
 class Llama2LLM(LLMModel):
     model_name = 'Llama-2-7b-chat-hf'
     repository = 'meta-llama'

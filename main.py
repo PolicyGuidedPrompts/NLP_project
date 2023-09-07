@@ -50,9 +50,6 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
 
-# TODO - fix paths to relative
-# TODO - fix multiple devices
-
 # TODO - if time permits add retriever logic
 # TODO - don't forget in readme to specify env variables roles
 # TODO - logger should also log errors
@@ -96,5 +93,3 @@ if __name__ == "__main__":
     policy_search_algorithms = {'pg': PolicyGradient, 'ppo': PPO}
     policy_search_algorithm = policy_search_algorithms[namespace.algorithm](env, config)
     policy_search_algorithm.run()
-
-# TODO - clean repo from garbage

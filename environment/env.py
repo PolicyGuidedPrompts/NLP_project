@@ -29,9 +29,8 @@ class Environment:
 
         # Define observation space based on a sample observation
         sample_observation = self.encoder.encode("Sample question for shape determination")
-        self.observation_space = sample_observation
+        self.observation_space = sample_observation.shape[0]
 
-        # TODO - fix logger.info observation_space, action_space
         self.seed = seed
         self.reset()
         logger.info(f"Environment initialized with: "

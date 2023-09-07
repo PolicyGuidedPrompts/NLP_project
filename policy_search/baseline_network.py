@@ -19,26 +19,26 @@ class BaselineNetwork(nn.Module):
         self.env = env
         self.baseline = self.config.baseline
         self.lr = self.config.learning_rate
-        observation_dim = self.env.observation_space.shape[0]
+        self.observation_dim = self.env.observation_space
 
         # TODO - baseline network should have different parameters than policy network
         # Create the neural network baseline
         self.network = build_mlp(
-            input_size=observation_dim,
+            input_size=self.observation_dim,
             output_size=1,
             n_layers=self.config.n_layers,
             size=self.config.layer_size
         ).to(device)
 
         with CaptureStdout() as capture:
-            summary(self.network, input_size=(observation_dim,))
+            summary(self.network, input_size=(self.observation_dim,))
 
         # Define the optimizer for the baseline
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=self.lr)
         logger.info(f"Baseline initialized with:"
                     f"\n{capture.get_output()}"
                     f"{self.optimizer=}"
-                    f"\n{observation_dim=}"
+                    f"\n{self.observation_dim=}"
                     f"\n{self.lr=}")
 
     def forward(self, observations):
