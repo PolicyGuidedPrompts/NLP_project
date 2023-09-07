@@ -40,7 +40,7 @@ class Config:
         self.normalize_advantage = True
 
         # Get the directory where this script resides
-        self.BASE_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
+        self.BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
         # Construct paths relative to this directory
         retriever_str = f"_retriever={self.retriever}" if self.retriever else ""

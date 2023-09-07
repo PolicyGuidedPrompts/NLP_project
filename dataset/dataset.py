@@ -1,8 +1,8 @@
 import logging
-from abc import ABC, abstractmethod
-from datasets import load_dataset
-import pandas as pd
 import os
+from abc import ABC, abstractmethod
+
+from datasets import load_dataset
 from nltk.translate.bleu_score import sentence_bleu
 from sklearn.metrics import f1_score
 
@@ -11,26 +11,12 @@ logger = logging.getLogger('root')
 
 # TODO - remember test part of dataset
 class Dataset(ABC):
-    datasets_dir = "./saved_datasets"
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    datasets_dir = os.path.join(script_dir, "../saved_datasets")
 
     def __init__(self):
-        dataset_dir = os.path.join(os.path.abspath(self.datasets_dir), self.dataset_name)
-
-        if os.path.exists(dataset_dir):
-            self.data = self.load_from_disk(dataset_dir)
-        else:
-            self.data = self.load_from_repository()
-            # Save the dataset
-            if not os.path.exists(dataset_dir):
-                os.makedirs(dataset_dir)
-
-            self.data.to_csv(os.path.join(dataset_dir, "data.csv"), index=False)
-
+        self.data = self.load_from_repository()
         logger.info(f"Loaded dataset {self.dataset_name=}, scoring method: {self.get_scoring_method_name()}")
-
-    def load_from_disk(self, dataset_dir):
-        logger.info(f"Loading dataset {self.dataset_name} from disk")
-        return pd.read_csv(os.path.join(dataset_dir, "data.csv"), dtype={"answer": str})
 
     @abstractmethod
     def score(self, ground_truth, generated_answer):
@@ -53,7 +39,8 @@ class StrategyQaDataset(Dataset):
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from {self.repository}")
-        return load_dataset(self.dataset_path)["test"].to_pandas()[["question", "answer"]].assign(
+        return load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["test"].to_pandas()[
+            ["question", "answer"]].assign(
             answer=lambda x: x['answer'].astype(str))
 
     @classmethod
@@ -69,7 +56,7 @@ class SquadDataset(Dataset):
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path)["train"].to_pandas()
+        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()
         data['answer'] = data['answers'].apply(lambda x: x['text'][0] if x else None)
         return data[["question", "answer"]]
 
@@ -87,7 +74,7 @@ class TriviaQaDataset(Dataset):
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path, 'rc')["train"].to_pandas()
+        data = load_dataset(self.dataset_path, 'rc', cache_dir=self.datasets_dir)["train"].to_pandas()
         return data[["question", "answer"]]
 
     @classmethod

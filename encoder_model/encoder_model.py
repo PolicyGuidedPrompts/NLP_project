@@ -10,24 +10,16 @@ logger = logging.getLogger('root')
 
 
 class EncoderModel:
-    models_dir = "./saved_models/encoder_models"
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    models_dir = os.path.join(script_dir, "../saved_models/encoder_models")
 
     def __init__(self, model_name):
         self.model_name = model_name
-        model_dir = os.path.join(os.path.abspath(self.models_dir), self.model_name)
         logger.info(f"Loading encoder model {self.model_name=}")
 
-        required_files = ["config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.json"]
-        if all(os.path.exists(os.path.join(model_dir, file)) for file in required_files):
-            self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
-            self.model = AutoModel.from_pretrained(model_dir)
-        else:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
-            self.model = AutoModel.from_pretrained(self.model_path)
-            self.tokenizer.save_pretrained(model_dir)
-            self.model.save_pretrained(model_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
+        self.model = AutoModel.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
 
-        self.model = self.model.to(device)
 
     @abstractmethod
     def encode(self, text):
