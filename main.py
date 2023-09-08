@@ -47,7 +47,7 @@ parser.add_argument("--num_batches", type=int, default=1)  # number of batches t
 parser.add_argument("--batch_size", type=int, default=30)  # number of steps used to compute each policy update
 parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
-parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=50)
+parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=100)
 parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
 parser.add_argument("--llm_temperature", type=float, default=0.7)
 parser.add_argument("--initial_temperature", type=float, default=1e6)

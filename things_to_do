@@ -1,7 +1,5 @@
 Benchmarking
 
-Have to make sure everything is on device, ask GPT how to verify this easily
-
 Maybe try Experience Replay
 
 Currently our Agent doesn't keep track of the original question.
