@@ -67,6 +67,7 @@ scikit-learn
 scipy
 sentry-sdk
 setproctitle
+sentencepiece
 six
 smmap
 sympy
