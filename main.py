@@ -23,6 +23,10 @@ ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5','llama-2-7b','flan
 ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-en','gte-large'
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 
+# linear: T = T_init + (T_end - T_init) * (current_batch/num_batches)
+# exponential: T = T_init * (T_decay_factor)^(current_batch) + 1
+ALLOWED_TEMPERATURE_DECAY_LOGIC = ['linear', 'exponential']
+
 parser = argparse.ArgumentParser()
 # Required
 parser.add_argument("--dataset", type=str, required=True, choices=ALLOWED_DATASETS)
@@ -46,7 +50,10 @@ parser.add_argument("--normalize_advantage", type=bool, default=True)
 parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=50)
 parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
 parser.add_argument("--llm_temperature", type=float, default=0.7)
-
+parser.add_argument("--initial_temperature", type=float, default=1e6)
+parser.add_argument("--end_temperature", type=float, default=1)
+parser.add_argument("--temperature_decay_factor", type=float, default=0.85)  # For exponential decay
+parser.add_argument("--temperature_decay_logic", type=str, default='linear')
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)

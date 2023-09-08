@@ -29,6 +29,7 @@ class Config:
         self.eps_clip = namespace.eps_clip
         self.update_freq = namespace.update_freq
 
+        # TODO - when splitting baseline and policy network layers, remember to update output path
         # Policy + Baseline part
         self.n_layers = namespace.n_layers
         self.layer_size = namespace.layer_size
@@ -39,16 +40,23 @@ class Config:
         self.gamma = namespace.gamma  # the discount factor
         self.normalize_advantage = True
 
+        # Softmax Temperature Logic
+        self.initial_temperature = namespace.initial_temperature
+        self.end_temperature = namespace.end_temperature
+        self.temperature_decay_factor = namespace.temperature_decay_factor
+        self.temperature_decay_logic = namespace.temperature_decay_logic
+
         # Get the directory where this script resides
         self.BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
         # Construct paths relative to this directory
         retriever_str = f"_retriever={self.retriever}" if self.retriever else ""
         baseline_str = f"_baseline={self.baseline}" if self.baseline else ""
-        rel_output_path = os.path.join(
-            "results",
-            f"algorithm={self.algorithm}_dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}{retriever_str}{baseline_str}"
-        )
+
+        first_level = f"dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}_algorithm={self.algorithm}{baseline_str}{retriever_str}"
+        second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}_n_layers={self.n_layers}_learning_rate={self.learning_rate}_num_batches={self.num_batches}_batch_size={self.batch_size}_gamma={self.gamma}_temperature_decay_logic={self.temperature_decay_logic}"
+
+        rel_output_path = os.path.join("results", first_level, second_level)
         self.output_path = os.path.join(self.BASE_DIR, rel_output_path)
 
         # Note: Using os.path.join ensures the path is constructed correctly for the operating system.

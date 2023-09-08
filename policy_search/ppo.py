@@ -15,7 +15,7 @@ class PPO(PolicyGradient):
     def __init__(self, env, config):
         super(PPO, self).__init__(env, config)
 
-    def update_policy(self, observations, actions, advantages, old_logprobs):
+    def update_policy(self, observations, actions, advantages, old_logprobs, current_batch):
         """
         Args:
             observations: np.array of shape [batch size, dim(observation space)]
@@ -31,7 +31,7 @@ class PPO(PolicyGradient):
         old_logprobs = np2torch(old_logprobs)
 
         # Get the distribution of actions under the current policy
-        dist = self.policy.action_distribution(observations)
+        dist = self.policy.action_distribution(observations, current_batch)
 
         # Compute log probabilities for the actions
         new_logprobs = dist.log_prob(actions).squeeze()
@@ -68,15 +68,14 @@ class PPO(PolicyGradient):
         averaged_total_rewards = []
 
         for t in range(self.config.num_batches):
-            episodes = self.sample_episodes()
+            episodes = self.sample_episodes(current_batch=t)
             observations, actions, returns, advantages, batch_rewards, old_logprobs = self.merge_episodes_to_batch(
                 episodes)
 
             # run training operations
             for k in range(self.config.update_freq):
                 self.baseline_network.update_baseline(returns, observations)
-                self.update_policy(observations, actions, advantages,
-                                   old_logprobs)
+                self.update_policy(observations, actions, advantages, old_logprobs, current_batch=t)
 
             avg_batch_reward = batch_rewards.mean()
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
@@ -85,25 +84,25 @@ class PPO(PolicyGradient):
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
 
-    def sample_episode(self):
+    def sample_episode(self, current_batch):
         observation = self.env.reset()
         episode = PPOEpisode()
         done = False
 
         while not done:
-            action, old_logprob = self.policy.act(observation.reshape(1, -1), return_log_prob=True)
+            action, old_logprob = self.policy.act(observation.reshape(1, -1), current_batch, return_log_prob=True)
             next_observation, reward, done, _ = self.env.step(action.item())
             episode.add(observation, action.item(), reward, old_logprob.item())
             observation = next_observation
 
         return episode
 
-    def sample_episodes(self):
+    def sample_episodes(self, current_batch):
         episodes = []
         t = 0
 
         while t < self.config.batch_size:
-            episode = self.sample_episode()
+            episode = self.sample_episode(current_batch)
             t += len(episode)
             episodes.append(episode)
 

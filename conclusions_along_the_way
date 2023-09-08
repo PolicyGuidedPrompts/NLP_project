@@ -11,3 +11,5 @@ chooses same action all the time
 
 The policy seems to not really care about if question itself but rather put more attention to how the question answer is
 formatted
+
+put two different logic of softmax temperature in order to encourage exploration

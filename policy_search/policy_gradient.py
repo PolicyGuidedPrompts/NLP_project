@@ -59,31 +59,31 @@ class PolicyGradient(object):
             size=self.config.layer_size
         )
 
-        self.policy = CategoricalPolicy(self._network).to(device)
+        self.policy = CategoricalPolicy(self._network, self.config).to(device)
 
         # TODO - used to have GaussianPolicy here
 
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
 
-    def sample_episode(self):
+    def sample_episode(self, current_batch):
         observation = self.env.reset()
         episode = Episode()
         done = False
 
         while not done:
-            action, _ = self.policy.act(observation.reshape(1, -1))
+            action, _ = self.policy.act(observation.reshape(1, -1), current_batch)
             next_observation, reward, done, _ = self.env.step(action.item())
             episode.add(observation, action.item(), reward)
             observation = next_observation
 
         return episode
 
-    def sample_episodes(self):
+    def sample_episodes(self, current_batch):
         episodes = []
         t = 0
 
         while t < self.config.batch_size:
-            episode = self.sample_episode()
+            episode = self.sample_episode(current_batch)
             t += len(episode)
             episodes.append(episode)
 
@@ -153,7 +153,7 @@ class PolicyGradient(object):
 
         return advantages
 
-    def update_policy(self, observations, actions, advantages):
+    def update_policy(self, observations, actions, advantages, current_batch):
         """
         Args:
             observations: np.array of shape [batch size, dim(observation space)]
@@ -167,7 +167,7 @@ class PolicyGradient(object):
         advantages = np2torch(advantages)
 
         # Get log probabilities of the actions
-        action_dists = self.policy.action_distribution(observations)
+        action_dists = self.policy.action_distribution(observations, current_batch)
         log_probs = action_dists.log_prob(actions)
 
         # Zero out the gradients from the previous pass
@@ -195,17 +195,18 @@ class PolicyGradient(object):
         return observations, actions, returns, advantages, batch_rewards
 
     # TODO - save model every x timestamps
+    # TODO - add epoch logic
     def train(self):
         averaged_total_rewards = []
         for t in range(self.config.num_batches):
-            episodes = self.sample_episodes()
+            episodes = self.sample_episodes(current_batch=t)
             observations, actions, returns, advantages, batch_rewards = self.merge_episodes_to_batch(episodes)
 
             # run training operations
             if self.config.baseline:
                 self.baseline_network.update_baseline(returns, observations)
 
-            self.update_policy(observations, actions, advantages)
+            self.update_policy(observations, actions, advantages, current_batch=t)
 
             avg_batch_reward = batch_rewards.mean()
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(

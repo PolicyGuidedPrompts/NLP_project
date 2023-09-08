@@ -5,7 +5,8 @@ from utils.network_utils import np2torch
 
 
 class BasePolicy:
-    def action_distribution(self, observations):
+    def action_distribution(self, observations, current_batch):
+        # TODO - add current_batch to docstring
         """
         Args:
             observations: torch.Tensor of shape [batch size, dim(observation space)]
@@ -22,7 +23,7 @@ class BasePolicy:
         """
         raise NotImplementedError
 
-    def act(self, observation, return_log_prob=False):
+    def act(self, observation, current_batch, return_log_prob=False):
         """
         Args:
             observation: np.array of shape (1, dim(observation space))
@@ -31,7 +32,7 @@ class BasePolicy:
             log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
         """
         observation = np2torch(observation)
-        action_distribution = self.action_distribution(observation)
+        action_distribution = self.action_distribution(observation, current_batch)
 
         sampled_action = action_distribution.sample()
 
@@ -43,11 +44,12 @@ class BasePolicy:
 
 # TODO - think if this CategoricalPolicy is even required
 class CategoricalPolicy(BasePolicy, nn.Module):
-    def __init__(self, network):
+    def __init__(self, network, config):
         nn.Module.__init__(self)
+        self.config = config
         self.network = network
 
-    def action_distribution(self, observations):
+    def action_distribution(self, observations, current_batch):
         """
         Args:
             observations: torch.Tensor of shape [batch size, dim(observation space)]
@@ -56,8 +58,24 @@ class CategoricalPolicy(BasePolicy, nn.Module):
                 are computed by self.network
         """
         logits = self.network(observations)
-        distribution = torch.distributions.Categorical(logits=logits)
+        softmax_temperature = self._get_softmax_temperature(current_batch)
+        distribution = torch.distributions.Categorical(logits=logits / softmax_temperature)
         return distribution
+
+    def _get_softmax_temperature(self, current_batch):
+        if self.config.temperature_decay_logic == 'linear':
+            return self._get_linear_softmax_temperature(current_batch)
+        elif self.config.temperature_decay_logic == 'exponential':
+            return self._get_exp_softmax_temperature(current_batch)
+        else:
+            raise NotImplementedError
+
+    def _get_exp_softmax_temperature(self, current_batch):
+        return self.config.initial_temperature * (self.config.temperature_decay_factor ** current_batch) + 1
+
+    def _get_linear_softmax_temperature(self, current_batch):
+        return self.config.initial_temperature + (self.config.end_temperature - self.config.initial_temperature) * (
+                current_batch / self.config.num_batches)
 
 
 # TODO - maybe remove this policy
@@ -75,7 +93,7 @@ class GaussianPolicy(BasePolicy, nn.Module):
         std = torch.exp(self.log_std)
         return std
 
-    def action_distribution(self, observations):
+    def action_distribution(self, observations, current_batch):
         """
         Args:
             observations: torch.Tensor of shape [batch size, dim(observation space)]
