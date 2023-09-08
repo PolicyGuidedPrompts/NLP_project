@@ -1,8 +1,10 @@
 import logging
 import os
+from datetime import datetime
 
 import numpy as np
 import torch
+import wandb
 
 from policy_search.baseline_network import BaselineNetwork
 from utils.network_utils import build_mlp, device, np2torch
@@ -194,6 +196,16 @@ class PolicyGradient(object):
 
         return observations, actions, returns, advantages, batch_rewards
 
+    def _init_wandb(self):
+        fields_to_exclude = ['output_path', 'model_output', 'log_path', 'scores_output', 'plot_output', 'BASE_DIR',
+                             'dataset', 'seed']
+
+        wandb.init(
+            project="NLP_project",
+            name=datetime.now().strftime('%Y-%m-%d_%H-%M-%S'),
+            config={k: v for k, v in vars(self.config).items() if k not in fields_to_exclude}
+        )
+
     # TODO - save model every x timestamps
     # TODO - add epoch logic
     def train(self):
@@ -209,11 +221,15 @@ class PolicyGradient(object):
             self.update_policy(observations, actions, advantages, current_batch=t)
 
             avg_batch_reward = batch_rewards.mean()
+            std_batch_reward = batch_rewards.std()
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
-                t, avg_batch_reward, batch_rewards.std()
+                t, avg_batch_reward, std_batch_reward
             )
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
+
+            # WANDB LOG
+            wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
 
     # TODO - fix add logic
     def evaluate(self, env=None, num_episodes=1):
@@ -232,5 +248,10 @@ class PolicyGradient(object):
         Apply procedures of training for a PG.
         """
         logger.info("Training started...")
-        self.train()
+        wandb.login()
+        self._init_wandb()
+        try:
+            self.train()
+        except Exception:
+            wandb.finish()
         logger.info("Training completed...")

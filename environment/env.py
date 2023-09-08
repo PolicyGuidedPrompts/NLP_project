@@ -41,7 +41,7 @@ class Environment:
                     f"{self.encoder.model_name=})")
 
     def _update_prompt_based_on_action(self, action):
-        sampled_question, sampled_answer = self.dataset.data.iloc[action]
+        sampled_question, sampled_answer = self.dataset.data.iloc[action-1]
         self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
 
     def step(self, action):

@@ -64,6 +64,7 @@ logging.getLogger("openai").setLevel(logging.WARNING)
 # TODO - don't forget in readme to specify env variables roles
 # TODO - logger should also log errors
 # TODO - see if can reduce size of requirements.txt
+# TODO - Download the best model file from a sweep https://wandb.ai/yair_nlp/NLP_project/overview
 
 def set_seeds(seed):
     torch.random.manual_seed(seed)

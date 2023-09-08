@@ -13,3 +13,5 @@ The policy seems to not really care about if question itself but rather put more
 formatted
 
 put two different logic of softmax temperature in order to encourage exploration
+
+see if can prove correlation between prompt length and better predictions
