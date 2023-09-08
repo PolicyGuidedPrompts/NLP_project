@@ -214,6 +214,7 @@ class PolicyGradient(object):
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
 
+    # TODO - fix add logic
     def evaluate(self, env=None, num_episodes=1):
         pass
         # if env == None:

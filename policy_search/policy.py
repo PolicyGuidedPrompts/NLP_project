@@ -60,6 +60,7 @@ class CategoricalPolicy(BasePolicy, nn.Module):
         return distribution
 
 
+# TODO - maybe remove this policy
 class GaussianPolicy(BasePolicy, nn.Module):
     def __init__(self, network, action_dim):
         nn.Module.__init__(self)
