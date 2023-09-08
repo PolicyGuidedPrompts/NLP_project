@@ -78,4 +78,6 @@ Thumbs.db
 saved_models/
 saved_datasets/
 results/
+wandb/
+
 
