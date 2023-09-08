@@ -2,8 +2,7 @@ import logging
 import os
 from abc import abstractmethod
 import torch
-from transformers import AutoTokenizer, GPT2LMHeadModel, GPT2Tokenizer, BitsAndBytesConfig, AutoConfig, \
-    AutoModelForCausalLM
+import transformers
 import openai
 
 from utils.network_utils import device
@@ -11,6 +10,7 @@ from utils.network_utils import device
 logger = logging.getLogger('root')
 
 
+# TODO - remove bitsandbytes
 class LLMModel:
     script_dir = os.path.dirname(os.path.realpath(__file__))
     models_dir = os.path.join(script_dir, "../saved_models/llm_models")
@@ -66,8 +66,8 @@ class GPT2LLM(LLMModel):
     def __init__(self, config):
         super().__init__(config)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = GPT2LMHeadModel.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
+        self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
+        self.model = transformers.GPT2LMHeadModel.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
         self.model.eval()
 
         if not self.tokenizer.pad_token:
@@ -82,20 +82,20 @@ class Llama2LLM(LLMModel):
     def __init__(self, config):
         super().__init__(config)
 
-        # self.bnb_config = BitsAndBytesConfig(
+        # self.bnb_config = transformers.BitsAndBytesConfig(
         #     load_in_4bit=True,
         #     bnb_4bit_quant_type='nf4',
         #     bnb_4bit_use_double_quant=True,
         #     bnb_4bit_compute_dtype=torch.bfloat16
         # )
 
-        self.model_config = AutoConfig.from_pretrained(
+        self.model_config = transformers.AutoConfig.from_pretrained(
             self.model_path,
             use_auth_token=self.hf_auth,
             cache_dir=self.models_dir
         )
 
-        self.model = AutoModelForCausalLM.from_pretrained(
+        self.model = transformers.AutoModelForCausalLM.from_pretrained(
             self.model_path,
             trust_remote_code=True,
             config=self.model_config,
@@ -105,7 +105,7 @@ class Llama2LLM(LLMModel):
             cache_dir=self.models_dir
         ).to(device)
         self.model.eval()
-        self.tokenizer = AutoTokenizer.from_pretrained(
+        self.tokenizer = transformers.AutoTokenizer.from_pretrained(
             self.model_path,
             use_auth_token=self.hf_auth,
             cache_dir=self.models_dir
@@ -113,6 +113,69 @@ class Llama2LLM(LLMModel):
 
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
+
+
+class FlanT5BaseLLM(LLMModel):
+    model_name = "flan-t5-base"
+    repository = 'google'
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
+        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
+        self.model.eval()
+
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+    def generate_answer(self, prompt):
+        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
+        input_ids = inputs['input_ids'].to(device)
+        attention_mask = inputs['attention_mask'].to(device)
+
+        with torch.no_grad():
+            output = self.model.generate(input_ids,
+                                         attention_mask=attention_mask,
+                                         early_stopping=True,
+                                         max_new_tokens=self.max_output_tokenized_len,
+                                         temperature=self.temperature).cpu()
+
+        generated_answer = self.tokenizer.decode(
+            output[0], skip_special_tokens=True
+        )
+        return generated_answer.strip()
+
+
+class FlanT5SmallLLM(LLMModel):
+    model_name = "flan-t5-small"
+    repository = 'google'
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
+        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
+                                                                             cache_dir=self.models_dir).to(device)
+        self.model.eval()
+
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+    def generate_answer(self, prompt):
+        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
+        input_ids = inputs['input_ids'].to(device)
+        attention_mask = inputs['attention_mask'].to(device)
+
+        with torch.no_grad():
+            output = self.model.generate(input_ids,
+                                         attention_mask=attention_mask,
+                                         early_stopping=True,
+                                         max_new_tokens=self.max_output_tokenized_len,
+                                         temperature=self.temperature).cpu()
+
+        generated_answer = self.tokenizer.decode(
+            output[0], skip_special_tokens=True
+        )
+        return generated_answer.strip()
 
 
 class GPT35TurboLLM0613(LLMModel):
@@ -125,7 +188,7 @@ class GPT35TurboLLM0613(LLMModel):
     def __init__(self, config):
         super().__init__(config)
 
-        self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2', cache_dir=self.models_dir)
+        self.tokenizer = transformers.GPT2Tokenizer.from_pretrained('gpt2', cache_dir=self.models_dir)
 
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -143,7 +206,9 @@ class GPT35TurboLLM0613(LLMModel):
 AVAILABLE_LLM_MODELS = {
     'gpt3.5': GPT35TurboLLM0613,
     'gpt2': GPT2LLM,
-    'llama-2-7b': Llama2LLM
+    'llama-2-7b': Llama2LLM,
+    'flan-t5-base': FlanT5BaseLLM,
+    'flan-t5-small': FlanT5SmallLLM
 }
 
 

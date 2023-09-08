@@ -19,7 +19,7 @@ from utils.utils import get_logger
 # TODO - minimize requirements
 
 ALLOWED_DATASETS = AVAILABLE_DATASETS.keys()  # 'strategy-qa','squad','trivia-qa'
-ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5','llama-2-7b'
+ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5','llama-2-7b','flan-t5-base','flan-t5-small'
 ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-en','gte-large'
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 
