@@ -85,7 +85,8 @@ class PPO(PolicyGradient):
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
 
-            wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
+            if self.config.run_name:
+                wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
 
     def sample_episode(self, current_batch):
         observation = self.env.reset()

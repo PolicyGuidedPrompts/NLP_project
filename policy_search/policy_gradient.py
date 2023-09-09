@@ -228,7 +228,8 @@ class PolicyGradient(object):
             logger.info(msg)
 
             # WANDB LOG
-            wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
+            if self.config.run_name:
+                wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
 
     # TODO - fix add logic
     def evaluate(self, env=None, num_episodes_per_batch=1):

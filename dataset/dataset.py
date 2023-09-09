@@ -56,15 +56,15 @@ class StrategyQaDataset(Dataset):
 
     def reset(self):
         sample = self.data.sample(1).iloc[0]
-        question, ground_truth = f'Facts: {sample["facts"]}\n' \
-                                 f'Question: {sample["question"]}\n' \
+        question, ground_truth = f'Question: {sample["question"]}\n' \
+                                 f'Facts: {sample["facts"]}\n' \
                                  f'Answer: ', sample["answer"]
         return question, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.data.iloc[action - 1]
-        new_prompt = f'Facts: {sample["facts"]}\n' \
-                     f'Question: {sample["question"]}\n' \
+        new_prompt = f'Question: {sample["question"]}\n' \
+                     f'Facts: {sample["facts"]}\n' \
                      f'Answer: {sample["answer"]}\n' \
                      f'{current_prompt}'
         return new_prompt
