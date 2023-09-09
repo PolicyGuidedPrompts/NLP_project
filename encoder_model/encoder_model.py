@@ -57,10 +57,10 @@ class BgeLargeEnEncoder(EncoderModel):
     def encode(self, text, s2p_retrieval=False):
         if s2p_retrieval:
             text = self.query_instruction + text
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512).to(device)
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        sentence_embeddings = outputs[0][:, 0]
+        sentence_embeddings = outputs.last_hidden_state[:, 0]
         sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
         return sentence_embeddings.squeeze().detach().cpu().numpy()
 

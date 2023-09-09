@@ -59,7 +59,7 @@ class Environment:
 
         return self.encoder.encode(self.question), reward, done, generated_answer
 
-    def reset(self, *, seed=None, options=None):
+    def reset(self):
         sample = self.dataset.data.sample(1).iloc[0]
         self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
         return self.encoder.encode(self.question)
