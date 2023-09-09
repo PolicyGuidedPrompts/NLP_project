@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 import torch
+import wandb
 
 from utils.network_utils import np2torch
 from policy_search.policy_gradient import PolicyGradient
@@ -66,7 +67,6 @@ class PPO(PolicyGradient):
 
     def train(self):
         averaged_total_rewards = []
-
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes(current_batch=t)
             observations, actions, returns, advantages, batch_rewards, old_logprobs = self.merge_episodes_to_batch(
@@ -78,11 +78,14 @@ class PPO(PolicyGradient):
                 self.update_policy(observations, actions, advantages, old_logprobs, current_batch=t)
 
             avg_batch_reward = batch_rewards.mean()
+            std_batch_reward = batch_rewards.std()
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
-                t, avg_batch_reward, batch_rewards.std()
+                t, avg_batch_reward, std_batch_reward
             )
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
+
+            wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
 
     def sample_episode(self, current_batch):
         observation = self.env.reset()
