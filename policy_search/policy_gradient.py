@@ -83,11 +83,9 @@ class PolicyGradient(object):
 
     def sample_episodes(self, current_batch):
         episodes = []
-        t = 0
 
-        while t < self.config.batch_size:
+        for i in range(self.config.num_episodes_per_batch):
             episode = self.sample_episode(current_batch)
-            t += len(episode)
             episodes.append(episode)
 
         return episodes
@@ -233,11 +231,11 @@ class PolicyGradient(object):
             wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
 
     # TODO - fix add logic
-    def evaluate(self, env=None, num_episodes=1):
+    def evaluate(self, env=None, num_episodes_per_batch=1):
         pass
         # if env == None:
         #     env = self.env
-        # paths, rewards = self.sample_paths(env, num_episodes)
+        # paths, rewards = self.sample_paths(env, num_episodes_per_batch)
         # avg_reward = np.mean(rewards)
         # sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
         # msg = "Average reward: {:04.2f} +/- {:04.2f}".format(avg_reward, sigma_reward)

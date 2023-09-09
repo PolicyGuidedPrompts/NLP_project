@@ -38,7 +38,7 @@ class Config:
         self.learning_rate = namespace.learning_rate
         self.baseline = namespace.baseline
         self.num_batches = namespace.num_batches  # number of batches trained on
-        self.batch_size = namespace.batch_size  # number of steps used to compute each policy update
+        self.num_episodes_per_batch = namespace.num_episodes_per_batch  # number of steps used to compute each policy update
         self.gamma = namespace.gamma  # the discount factor
         self.normalize_advantage = True
 
@@ -56,7 +56,7 @@ class Config:
         baseline_str = f"_baseline={self.baseline}" if self.baseline else ""
 
         first_level = f"dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}_algorithm={self.algorithm}{baseline_str}{retriever_str}"
-        second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}_n_layers={self.n_layers}_learning_rate={self.learning_rate}_num_batches={self.num_batches}_batch_size={self.batch_size}_gamma={self.gamma}_temperature_decay_logic={self.temperature_decay_logic}"
+        second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}_n_layers={self.n_layers}_learning_rate={self.learning_rate}_num_batches={self.num_batches}_num_episodes_per_batch={self.num_episodes_per_batch}_gamma={self.gamma}_temperature_decay_logic={self.temperature_decay_logic}"
 
         rel_output_path = os.path.join("results", first_level, second_level)
         self.output_path = os.path.join(self.BASE_DIR, rel_output_path)

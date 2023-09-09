@@ -96,14 +96,3 @@ class PPO(PolicyGradient):
             observation = next_observation
 
         return episode
-
-    def sample_episodes(self, current_batch):
-        episodes = []
-        t = 0
-
-        while t < self.config.batch_size:
-            episode = self.sample_episode(current_batch)
-            t += len(episode)
-            episodes.append(episode)
-
-        return episodes

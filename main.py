@@ -45,15 +45,15 @@ parser.add_argument("--eps_clip", type=float, default=0.2)  # For PPO
 parser.add_argument("--update_freq", type=int, default=5)  # For PPO
 parser.add_argument("--n_layers", type=int, default=1)
 parser.add_argument("--layer_size", type=int, default=64)
-parser.add_argument("--learning_rate", type=float, default=3e-2)
+parser.add_argument("--learning_rate", type=float, default=0.1)
 parser.add_argument("--num_batches", type=int, default=1)  # number of batches trained on
-parser.add_argument("--batch_size", type=int, default=30)  # number of steps used to compute each policy update
+parser.add_argument("--num_episodes_per_batch", type=int, default=30)  # number of steps used to compute each policy update
 parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
 parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=100)
 parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
 parser.add_argument("--llm_temperature", type=float, default=0.7)
-parser.add_argument("--initial_temperature", type=float, default=1e6)
+parser.add_argument("--initial_temperature", type=float, default=400)
 parser.add_argument("--end_temperature", type=float, default=1)
 parser.add_argument("--temperature_decay_factor", type=float, default=0.85)  # For exponential decay
 parser.add_argument("--temperature_decay_logic", type=str, default='linear')
