@@ -28,6 +28,9 @@ ALLOWED_ALGORITHMS = ['pg', 'ppo']
 ALLOWED_TEMPERATURE_DECAY_LOGIC = ['linear', 'exponential']
 
 parser = argparse.ArgumentParser()
+# Run name
+parser.add_argument("--run_name", type=str, default=None)
+
 # Required
 parser.add_argument("--dataset", type=str, required=True, choices=ALLOWED_DATASETS)
 parser.add_argument("--llm_model", type=str, required=True, choices=ALLOWED_LLMS)

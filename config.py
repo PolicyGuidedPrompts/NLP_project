@@ -1,9 +1,11 @@
 import os
-import sys
 
 
 class Config:
     def __init__(self, namespace):
+        # Run Name
+        self.run_name = namespace.run_name
+
         # General part
         self.seed = namespace.seed
 

@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 from datetime import datetime
@@ -202,7 +203,7 @@ class PolicyGradient(object):
 
         wandb.init(
             project="NLP_project",
-            name=datetime.now().strftime('%Y-%m-%d_%H-%M-%S'),
+            name=datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + f'-{self.config.run_name}',
             config={k: v for k, v in vars(self.config).items() if k not in fields_to_exclude}
         )
 
@@ -243,15 +244,24 @@ class PolicyGradient(object):
         # self.logger.info(msg)
         # return avg_reward
 
+    @contextlib.contextmanager
+    def wandb_context(self):
+        if self.config.run_name:
+            wandb.login()
+            self._init_wandb()
+        yield
+        if self.config.run_name:
+            wandb.finish()
+
     def run(self):
         """
         Apply procedures of training for a PG.
         """
         logger.info("Training started...")
-        wandb.login()
-        self._init_wandb()
-        try:
-            self.train()
-        except Exception:
-            wandb.finish()
-        logger.info("Training completed...")
+        with self.wandb_context():
+            try:
+                self.train()
+            except Exception as e:
+                logger.error(f"Training finished unexpectedly - {e}")
+            finally:
+                logger.info("Training completed...")
