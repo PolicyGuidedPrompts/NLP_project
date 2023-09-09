@@ -11,7 +11,7 @@ Split train test
 
 Hyperparameter tuning
 
-K-shot /
+Score based on multiple tries, majority vote, it time permits
 
 Different policy search algorithms (Maybe add DQN/TRPO)
 
