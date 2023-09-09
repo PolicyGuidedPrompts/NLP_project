@@ -47,10 +47,10 @@ parser.add_argument("--n_layers", type=int, default=1)
 parser.add_argument("--layer_size", type=int, default=64)
 parser.add_argument("--learning_rate", type=float, default=0.1)
 parser.add_argument("--num_batches", type=int, default=1)  # number of batches trained on
-parser.add_argument("--num_episodes_per_batch", type=int, default=30)  # number of steps used to compute each policy update
+parser.add_argument("--num_episodes_per_batch", type=int, default=10)  # number of steps used to compute each policy update
 parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
-parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=100)
+parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=450)
 parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
 parser.add_argument("--llm_temperature", type=float, default=0.7)
 parser.add_argument("--initial_temperature", type=float, default=400)

@@ -40,15 +40,12 @@ class Environment:
                     f"{self.llm.model_name=}, "
                     f"{self.encoder.model_name=})")
 
-    def _update_prompt_based_on_action(self, action):
-        sampled_question, sampled_answer = self.dataset.data.iloc[action-1]
-        self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
-
+    # TODO - change self.question to prompt
     def step(self, action):
         if action == self.terminate_action:
             done = True
         else:
-            self._update_prompt_based_on_action(action)
+            self.question = self.dataset.update_prompt(action, self.question)
             done = self.llm.is_prompt_too_long(self.question)
 
         if done:
@@ -60,8 +57,7 @@ class Environment:
         return self.encoder.encode(self.question), reward, done, generated_answer
 
     def reset(self):
-        sample = self.dataset.data.sample(1).iloc[0]
-        self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
+        self.question, self.ground_truth = self.dataset.reset()
         return self.encoder.encode(self.question)
 
     # TODO - hyper parameters as well as n_layers and heavier models try on slurm

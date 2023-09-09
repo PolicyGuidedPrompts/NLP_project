@@ -11,6 +11,8 @@ Split train test
 
 Hyperparameter tuning
 
+K-shot /
+
 Different policy search algorithms (Maybe add DQN/TRPO)
 
 Continuous action space

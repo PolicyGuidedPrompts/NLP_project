@@ -22,6 +22,13 @@ class Dataset(ABC):
     def score(self, ground_truth, generated_answer):
         pass
 
+    @abstractmethod
+    def reset(self):
+        pass
+
+    def update_prompt(self, action, current_prompt):
+        pass
+
     @property
     def dataset_path(self):
         if hasattr(self, 'repository'):
@@ -29,6 +36,16 @@ class Dataset(ABC):
         return self.dataset_name
 
 
+#         def _update_prompt_based_on_action(self, action):
+#         sampled_question, sampled_answer = self.dataset.data.iloc[action-1]
+#         self.question = f"Question: {sampled_question}\nAnswer: {sampled_answer}\n{self.question}"
+
+#     def reset(self):
+#         sample = self.dataset.data.sample(1).iloc[0]
+#         self.question, self.ground_truth = f'Question: {sample["question"]}\nAnswer: ', sample["answer"]
+#         return self.encoder.encode(self.question)
+
+# TODO - implement reset + update_prompt for other datasets
 class StrategyQaDataset(Dataset):
     repository = "wics"
     dataset_name = "strategy-qa"
@@ -37,10 +54,27 @@ class StrategyQaDataset(Dataset):
     def score(self, ground_truth, generated_answer):
         return 1 if ground_truth == generated_answer else -1
 
+    def reset(self):
+        sample = self.data.sample(1).iloc[0]
+        question, ground_truth = f'Question: {sample["question"]}\n' \
+                                 f'Facts: {sample["facts"]}\n' \
+                                 f'Decomposition: {sample["decomposition"]}\n' \
+                                 f'Answer: ', sample["answer"]
+        return question, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.data.iloc[action - 1]
+        new_prompt = f'Question: {sample["question"]}\n' \
+                     f'Facts: {sample["facts"]}\n' \
+                     f'Decomposition: {sample["decomposition"]}\n' \
+                     f'Answer: {sample["answer"]}\n' \
+                     f'{current_prompt}'
+        return new_prompt
+
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from {self.repository}")
         return load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["test"].to_pandas()[
-            ["question", "answer"]].assign(
+            ["question", "answer", "facts", "decomposition"]].assign(
             answer=lambda x: x['answer'].astype(str))
 
     @classmethod
