@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 
 # TODO - Deberta tokenizer and model
 
@@ -28,8 +29,8 @@ class Environment:
         self.action_space = len(self.dataset.data) + 1  # +1 for terminate action
 
         # Define observation space based on a sample observation
-        sample_observation = self.encoder.encode("Sample question for shape determination")
-        self.observation_space = sample_observation.shape[0]
+        # Half for generated prompt and half for storing the original question encodings
+        self.observation_space = self.encoder.encode("Sample question for shape determination").shape[0] * 2
 
         self.seed = seed
         self.reset()
@@ -45,8 +46,8 @@ class Environment:
         if action == self.terminate_action:
             done = True
         else:
-            self.question = self.dataset.update_prompt(action, self.question)
-            done = self.llm.is_prompt_too_long(self.question)
+            self.context_prompt = self.dataset.update_prompt(action, self.context_prompt)
+            done = self.llm.is_prompt_too_long(f'{self.context_prompt}{self.question}')
 
         if done:
             reward, generated_answer = self.evaluate_prompt()
@@ -54,16 +55,23 @@ class Environment:
             reward = 0
             generated_answer = None
 
-        return self.encoder.encode(self.question), reward, done, generated_answer
+        prompt_encodings = self.encoder.encode(self.context_prompt)
+        return np.concatenate([prompt_encodings, self.question_encodings]), reward, done, generated_answer
 
     def reset(self):
         self.question, self.ground_truth = self.dataset.reset()
-        return self.encoder.encode(self.question)
+        self.question_encodings = self.encoder.encode(self.question)
+        # Adding Answer: to original question
+        self.question = f'{self.question}\nAnswer: '
+        self.context_prompt = ''
+        self.prompt_encodings = self.encoder.encode(self.context_prompt)
+        return np.concatenate([self.prompt_encodings, self.question_encodings])
 
     # TODO - hyper parameters as well as n_layers and heavier models try on slurm
     def evaluate_prompt(self):
-        generated_answer = self.llm.generate_answer(self.question)
-        logger.debug(f"\nPrompt:\n{self.question}\n"
+        prompt = f'{self.context_prompt}{self.question}'
+        generated_answer = self.llm.generate_answer(prompt)
+        logger.debug(f"\nPrompt:\n{prompt}\n"
                      f"Generated answer:\n{generated_answer}\n"
                      f"Ground truth:\n{self.ground_truth}\n")
 

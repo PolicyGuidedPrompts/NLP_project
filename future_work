@@ -1,3 +1,6 @@
 Also train encoder
 
 k-shot will allow parallelism and enhance performance
+
+transformer between encoder and policy (instead of inserting original question + generated prompt encodings straight
+ into policy, go through a transformer that will determine the correct weight each section should receive)
