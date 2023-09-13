@@ -24,8 +24,8 @@ ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-e
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 
 # linear: T = T_init + (T_end - T_init) * (current_batch/num_batches)
-# exponential: T = T_init * (T_decay_factor)^(current_batch) + 1
-ALLOWED_TEMPERATURE_DECAY_LOGIC = ['linear', 'exponential']
+# exponential: T = T_init * (T_exploration_decay_factor)^(current_batch) + 1
+ALLOWED_POLICY_EXPLORATION_LOGIC = ['epsilon_greedy', 'linear_temperature_decay', 'exponential_temperature_decay']
 
 parser = argparse.ArgumentParser()
 # Run name
@@ -47,17 +47,20 @@ parser.add_argument("--n_layers", type=int, default=1)
 parser.add_argument("--layer_size", type=int, default=64)
 parser.add_argument("--learning_rate", type=float, default=0.1)
 parser.add_argument("--num_batches", type=int, default=1)  # number of batches trained on
-parser.add_argument("--num_episodes_per_batch", type=int, default=10)  # number of steps used to compute each policy update
+parser.add_argument("--num_episodes_per_batch", type=int,
+                    default=10)  # number of steps used to compute each policy update
 parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
 # TODO - should be a function of the model, for example t5 flan base can only handle 512 hence should be configured to 450 +-
 parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=450)
 parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
 parser.add_argument("--llm_temperature", type=float, default=0.7)
-parser.add_argument("--initial_temperature", type=float, default=400)
-parser.add_argument("--end_temperature", type=float, default=1)
-parser.add_argument("--temperature_decay_factor", type=float, default=0.85)  # For exponential decay
-parser.add_argument("--temperature_decay_logic", type=str, default='linear')
+# Policy exploration logic
+parser.add_argument("--policy_exploration_logic", type=str, default='epsilon_greedy', choices=ALLOWED_ALGORITHMS)
+parser.add_argument("--initial_temperature", type=float, default=400)  # For both linear and exponential
+parser.add_argument("--end_temperature", type=float, default=1)  # For linear and epsilon greedy
+# For exponential decay (should be ~0.85), and epsilon greedy (should be ~0.995)
+parser.add_argument("--exploration_decay_factor", type=float, default=0.995)
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)

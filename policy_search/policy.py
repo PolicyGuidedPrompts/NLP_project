@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 
 from utils.network_utils import np2torch
 
@@ -48,6 +49,7 @@ class CategoricalPolicy(BasePolicy, nn.Module):
         nn.Module.__init__(self)
         self.config = config
         self.network = network
+        self.epsilon = 1
 
     def action_distribution(self, observations, current_batch):
         """
@@ -63,19 +65,28 @@ class CategoricalPolicy(BasePolicy, nn.Module):
         return distribution
 
     def _get_softmax_temperature(self, current_batch):
-        if self.config.temperature_decay_logic == 'linear':
+        if self.config.policy_exploration_logic == 'linear_temperature_decay':
             return self._get_linear_softmax_temperature(current_batch)
-        elif self.config.temperature_decay_logic == 'exponential':
+        elif self.config.policy_exploration_logic == 'exponential_temperature_decay':
             return self._get_exp_softmax_temperature(current_batch)
+        elif self.config.policy_exploration_logic == 'epsilon_greedy':
+            return self._get_epsilon_greedy_softmax_temperature()
         else:
             raise NotImplementedError
 
     def _get_exp_softmax_temperature(self, current_batch):
-        return self.config.initial_temperature * (self.config.temperature_decay_factor ** current_batch) + 1
+        return self.config.initial_temperature * (self.config.exploration_decay_factor ** current_batch) + 1
 
     def _get_linear_softmax_temperature(self, current_batch):
         return self.config.initial_temperature + (self.config.end_temperature - self.config.initial_temperature) * (
                 current_batch / self.config.num_batches)
+
+    def _get_epsilon_greedy_softmax_temperature(self):
+        self.epsilon *= self.config.exploration_decay_factor
+        if np.random.rand() < self.epsilon:
+            return float('inf')
+        else:
+            return self.config.end_temperature
 
 
 # TODO - maybe remove this policy
