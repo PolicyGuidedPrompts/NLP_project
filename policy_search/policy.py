@@ -70,7 +70,7 @@ class CategoricalPolicy(BasePolicy, nn.Module):
         elif self.config.policy_exploration_logic == 'exponential_temperature_decay':
             return self._get_exp_softmax_temperature(current_batch)
         elif self.config.policy_exploration_logic == 'epsilon_greedy':
-            return self._get_epsilon_greedy_softmax_temperature()
+            return self._get_epsilon_greedy_softmax_temperature(current_batch)
         else:
             raise NotImplementedError
 
@@ -81,8 +81,8 @@ class CategoricalPolicy(BasePolicy, nn.Module):
         return self.config.initial_temperature + (self.config.end_temperature - self.config.initial_temperature) * (
                 current_batch / self.config.num_batches)
 
-    def _get_epsilon_greedy_softmax_temperature(self):
-        self.epsilon *= self.config.exploration_decay_factor
+    def _get_epsilon_greedy_softmax_temperature(self, current_batch):
+        self.epsilon = self.config.exploration_decay_factor**current_batch
         if np.random.rand() < self.epsilon:
             return float('inf')
         else:
