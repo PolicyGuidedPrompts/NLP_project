@@ -50,6 +50,7 @@ parser.add_argument("--num_batches", type=int, default=1)  # number of batches t
 parser.add_argument("--num_episodes_per_batch", type=int, default=10)  # number of steps used to compute each policy update
 parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
+# TODO - should be a function of the model, for example t5 flan base can only handle 512 hence should be configured to 450 +-
 parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=450)
 parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
 parser.add_argument("--llm_temperature", type=float, default=0.7)

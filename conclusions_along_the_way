@@ -15,3 +15,11 @@ formatted
 put two different logic of softmax temperature in order to encourage exploration
 
 see if can prove correlation between prompt length and better predictions
+
+prompt shorter than 300 results in YES/NO instead of True/False
+
+Fact -> Question > Answer resulted in "True Facts" instead of "True", switch the order Question -> Fact -> Answer helped
+
+longer prompts takes longer to get stuck on a specific action
+
+Prompt too long (more than 500 tokens cause poor predictions, instead of True/False continue sentence not even starting with True/False)
