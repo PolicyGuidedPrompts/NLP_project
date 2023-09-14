@@ -59,6 +59,7 @@ class PolicyGradient(object):
             input_size=self.observation_dim,
             output_size=self.action_dim,
             n_layers=self.config.n_layers,
+            size=self.config.layer_size,
             config=self.config
         )
 

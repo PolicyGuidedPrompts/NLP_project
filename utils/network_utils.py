@@ -4,7 +4,7 @@ import torch.nn as nn
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def build_mlp(input_size, output_size, n_layers, config):
+def build_mlp(input_size, output_size, n_layers, size, config):
     """
     Args:
         input_size: int, the dimension of inputs to be given to the network
@@ -15,7 +15,6 @@ def build_mlp(input_size, output_size, n_layers, config):
     Returns:
         An instance of (a subclass of) nn.Module representing the network.
     """
-    size = input_size//2
     layers = [nn.Linear(input_size, size)]
     if config.policy_instance_norm:
         layers.append(nn.InstanceNorm1d(size))
