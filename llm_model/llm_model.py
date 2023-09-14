@@ -82,6 +82,9 @@ class Llama2LLM(LLMModel):
 
     def __init__(self, config):
         super().__init__(config)
+        self.start_string_indicator = "[INST]"
+        self.end_string_indicator = "[/INST]"
+        self.prefix = "Attend to the following questions and answers, answer the last question accordingly."
 
         # self.bnb_config = transformers.BitsAndBytesConfig(
         #     load_in_4bit=True,
@@ -114,6 +117,10 @@ class Llama2LLM(LLMModel):
 
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
+
+    def generate_answer(self, prompt):
+        formatted_prompt = f"{self.start_string_indicator} {self.prefix}\n{prompt} {self.end_string_indicator}"
+        return super().generate_answer(formatted_prompt)
 
 
 class FlanT5BaseLLM(LLMModel):
