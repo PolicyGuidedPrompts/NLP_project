@@ -119,7 +119,7 @@ class Llama2LLM(LLMModel):
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
     def generate_answer(self, prompt):
-        formatted_prompt = f"{self.B_INST} {self.B_SYS}{self.prefix}{prompt}\n{self.E_SYS} {self.E_INST}"
+        formatted_prompt = f"{self.B_INST} {self.B_SYS}{self.prefix}\n{prompt}{self.E_SYS} {self.E_INST}"
         return super().generate_answer(formatted_prompt)
 
 
