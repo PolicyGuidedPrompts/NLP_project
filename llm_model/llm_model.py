@@ -1,6 +1,6 @@
 import logging
 import os
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 import torch
 import transformers
 import openai
@@ -12,7 +12,7 @@ logger = logging.getLogger('root')
 
 
 # TODO - remove bitsandbytes
-class LLMModel:
+class LLMModel(ABC):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     models_dir = os.path.join(script_dir, "../saved_models/llm_models")
 

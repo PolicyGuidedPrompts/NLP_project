@@ -1,6 +1,6 @@
 import logging
 import os
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 import torch
 from transformers import AutoTokenizer, AutoModel
 import numpy as np
@@ -10,7 +10,7 @@ from utils.network_utils import device
 logger = logging.getLogger('root')
 
 
-class EncoderModel:
+class EncoderModel(ABC):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     models_dir = os.path.join(script_dir, "../saved_models/encoder_models")
 
