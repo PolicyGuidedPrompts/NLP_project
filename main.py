@@ -60,7 +60,7 @@ parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=450)
 parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
 parser.add_argument("--llm_temperature", type=float, default=0.7)
 # Policy exploration logic
-parser.add_argument("--policy_exploration_logic", type=str, default='epsilon_greedy', choices=ALLOWED_ALGORITHMS)
+parser.add_argument("--policy_exploration_logic", type=str, default='epsilon_greedy', choices=ALLOWED_POLICY_EXPLORATION_LOGIC)
 parser.add_argument("--initial_temperature", type=float, default=400)  # For both linear and exponential
 parser.add_argument("--end_temperature", type=float, default=1)  # For linear and epsilon greedy
 # For exponential decay (should be ~0.85), and epsilon greedy (should be ~0.995)
