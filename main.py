@@ -49,7 +49,7 @@ parser.add_argument("--retriever", type=bool, default=False)
 parser.add_argument("--eps_clip", type=float, default=0.2)  # For PPO
 parser.add_argument("--update_freq", type=int, default=5)  # For PPO
 parser.add_argument("--n_layers", type=int, default=1)
-parser.add_argument("--layer_size", type=int, default=64)
+parser.add_argument("--first_layer_size", type=int, default=64)
 parser.add_argument("--learning_rate", type=float, default=0.1)
 parser.add_argument("--num_batches", type=int, default=1)  # number of batches trained on
 parser.add_argument("--num_episodes_per_batch", type=int,

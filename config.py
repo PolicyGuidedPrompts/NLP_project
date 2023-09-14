@@ -36,7 +36,7 @@ class Config:
         # Policy + Baseline part
         self.policy_instance_norm = namespace.policy_instance_norm
         self.n_layers = namespace.n_layers
-        self.layer_size = namespace.layer_size
+        self.first_layer_size = namespace.first_layer_size
         self.learning_rate = namespace.learning_rate
         self.baseline = namespace.baseline
         self.num_batches = namespace.num_batches  # number of batches trained on
