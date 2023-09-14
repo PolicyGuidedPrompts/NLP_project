@@ -22,6 +22,7 @@ ALLOWED_DATASETS = AVAILABLE_DATASETS.keys()  # 'strategy-qa','squad','trivia-qa
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5','llama-2-7b','flan-t5-base','flan-t5-small'
 ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-en','gte-large'
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
+ALLOWED_NORMALIZE_ENCODING_METHODS = ['l2', 'instance']  # can leave empty for no normalization
 
 # linear: T = T_init + (T_end - T_init) * (current_batch/num_batches)
 # exponential: T = T_init * (T_exploration_decay_factor)^(current_batch) + 1
@@ -34,7 +35,10 @@ parser.add_argument("--run_name", type=str, default=None)
 # Required
 parser.add_argument("--dataset", type=str, required=True, choices=ALLOWED_DATASETS)
 parser.add_argument("--llm_model", type=str, required=True, choices=ALLOWED_LLMS)
+# Encoder
 parser.add_argument("--encoder_model", type=str, required=True, choices=ALLOWED_ENCODERS)
+parser.add_argument("--normalize_encoding_method", type=str, default='', choices=ALLOWED_NORMALIZE_ENCODING_METHODS)
+# Algorithm
 parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGORITHMS)
 
 # Defaults
@@ -98,7 +102,7 @@ if __name__ == "__main__":
 
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
     llm = LLMFactory.create_llm(model_name=namespace.llm_model, config=config)
-    encoder = EncoderFactory.create_encoder(model_name=namespace.encoder_model)
+    encoder = EncoderFactory.create_encoder(model_name=namespace.encoder_model, config=config)
     retriever_model = None  # TODO - add retriever logic
 
     env = Environment(

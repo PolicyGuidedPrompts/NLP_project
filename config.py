@@ -21,6 +21,7 @@ class Config:
 
         # Encoder part
         self.encoder_model = namespace.encoder_model
+        self.normalize_encoding_method = namespace.normalize_encoding_method
 
         # Retriever part
         self.retriever = namespace.retriever
@@ -57,7 +58,9 @@ class Config:
 
         first_level = f"dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}" \
                       f"_algorithm={self.algorithm}" \
-                      f"_policy_exploration_logic={self.policy_exploration_logic}{baseline_str}{retriever_str}"
+                      f"_policy_exploration_logic={self.policy_exploration_logic}" \
+                      f"_normalize_encoding_method={self.normalize_encoding_method}" \
+                      f"{baseline_str}{retriever_str}"
         second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}" \
                        f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}" \
                        f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}" \
