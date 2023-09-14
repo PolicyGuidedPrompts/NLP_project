@@ -84,7 +84,7 @@ class Llama2LLM(LLMModel):
         super().__init__(config)
         self.start_string_indicator = "[INST]"
         self.end_string_indicator = "[/INST]"
-        self.prefix = "Attend to the following questions and answers, answer the last question accordingly."
+        self.prefix = "Answer only the last question in the same fashion other questions were answered."
 
         # self.bnb_config = transformers.BitsAndBytesConfig(
         #     load_in_4bit=True,
