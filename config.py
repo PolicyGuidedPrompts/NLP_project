@@ -34,6 +34,7 @@ class Config:
 
         # TODO - when splitting baseline and policy network layers, remember to update output path
         # Policy + Baseline part
+        self.policy_instance_norm = namespace.policy_instance_norm
         self.n_layers = namespace.n_layers
         self.layer_size = namespace.layer_size
         self.learning_rate = namespace.learning_rate
@@ -60,6 +61,7 @@ class Config:
                       f"_algorithm={self.algorithm}" \
                       f"_policy_exploration_logic={self.policy_exploration_logic}" \
                       f"_normalize_encoding_method={self.normalize_encoding_method}" \
+                      f"_policy_instance_norm={self.policy_instance_norm}" \
                       f"{baseline_str}{retriever_str}"
         second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}" \
                        f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}" \

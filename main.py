@@ -44,6 +44,7 @@ parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGO
 # Defaults
 parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--baseline", action="store_true", default=False)
+parser.add_argument("--policy_instance_norm", action="store_true", default=False)
 parser.add_argument("--retriever", type=bool, default=False)
 parser.add_argument("--eps_clip", type=float, default=0.2)  # For PPO
 parser.add_argument("--update_freq", type=int, default=5)  # For PPO

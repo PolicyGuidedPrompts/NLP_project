@@ -27,7 +27,8 @@ class BaselineNetwork(nn.Module):
             input_size=self.observation_dim,
             output_size=1,
             n_layers=self.config.n_layers,
-            size=self.config.layer_size
+            size=self.config.layer_size,
+            config=self.config
         ).to(device)
 
         with CaptureStdout() as capture:

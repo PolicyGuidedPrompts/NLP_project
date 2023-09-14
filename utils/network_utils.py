@@ -4,22 +4,28 @@ import torch.nn as nn
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def build_mlp(input_size, output_size, n_layers, size):
+def build_mlp(input_size, output_size, n_layers, size, config):
     """
     Args:
         input_size: int, the dimension of inputs to be given to the network
         output_size: int, the dimension of the output
         n_layers: int, the number of hidden layers of the network
         size: int, the size of each hidden layer
+        config: object
     Returns:
         An instance of (a subclass of) nn.Module representing the network.
     """
-    layers = []
-    layers.append(nn.Linear(input_size, size))
+    layers = [nn.Linear(input_size, size)]
+    if config.policy_instance_norm:
+        layers.append(nn.InstanceNorm1d(size))
     layers.append(nn.ReLU())
+
     for _ in range(n_layers - 1):
         layers.append(nn.Linear(size, size))
+        if config.policy_instance_norm:
+            layers.append(nn.InstanceNorm1d(size))
         layers.append(nn.ReLU())
+
     layers.append(nn.Linear(size, output_size))
     return nn.Sequential(*layers)
 
