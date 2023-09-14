@@ -3,6 +3,7 @@ import os
 from abc import abstractmethod
 import torch
 from transformers import AutoTokenizer, AutoModel
+import numpy as np
 
 from utils.network_utils import device
 
@@ -42,7 +43,8 @@ class BertEncoder(EncoderModel):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        return outputs.last_hidden_state[0, 0, :].detach().cpu().numpy()
+        encoding = outputs.last_hidden_state[0, 0, :].detach().cpu().numpy()
+        return encoding/np.linalg.norm(encoding)
 
 
 class BgeLargeEnEncoder(EncoderModel):
@@ -62,7 +64,8 @@ class BgeLargeEnEncoder(EncoderModel):
             outputs = self.model(**inputs)
         sentence_embeddings = outputs.last_hidden_state[:, 0]
         sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
-        return sentence_embeddings.squeeze().detach().cpu().numpy()
+        encoding = sentence_embeddings.squeeze().detach().cpu().numpy()
+        return encoding/np.linalg.norm(encoding)
 
 
 class GteLargeEncoder(EncoderModel):
@@ -79,7 +82,8 @@ class GteLargeEncoder(EncoderModel):
             outputs = self.model(**inputs)
         attention_mask = inputs['attention_mask']
         last_hidden = outputs.last_hidden_state.masked_fill(~attention_mask[..., None].bool(), 0.0)
-        return (last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]).squeeze().detach().cpu().numpy()
+        encoding = (last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]).squeeze().detach().cpu().numpy()
+        return encoding/np.linalg.norm(encoding)
 
 
 AVAILABLE_ENCODERS = {
