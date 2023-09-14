@@ -4,8 +4,9 @@ from abc import abstractmethod
 import torch
 import transformers
 import openai
-
+from retrying import retry
 from utils.network_utils import device
+from utils.utils import timeout
 
 logger = logging.getLogger('root')
 
@@ -193,14 +194,20 @@ class GPT35TurboLLM0613(LLMModel):
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
+    #  retry for 3 times with a 1-minute wait
+    @retry(stop_max_attempt_number=3, wait_fixed=60*1000)
     def generate_answer(self, prompt):
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0613",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=self.max_output_tokenized_len,
-            temperature=self.temperature
-        )
-        return response['choices'][0]['message']['content'].strip()
+        try:
+            with timeout(5):  # Set the timeout value for 5 seconds
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo-0613",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=self.max_output_tokenized_len,
+                    temperature=self.temperature)
+                return response['choices'][0]['message']['content'].strip()
+        except TimeoutError:
+            logger.warning(f"TimeoutError while generating answer")
+            raise
 
 
 AVAILABLE_LLM_MODELS = {

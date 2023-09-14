@@ -86,3 +86,4 @@ wandb
 xxhash
 yarl
 zipp
+retrying

@@ -1,9 +1,11 @@
 import time
+from contextlib import contextmanager
 from functools import wraps
 import logging
 import sys
 import os
 import io
+import signal
 
 
 def time_it(func):
@@ -54,3 +56,19 @@ class CaptureStdout:
 
     def get_output(self):
         return self._new_stdout.getvalue()
+
+
+@contextmanager
+def timeout(time):
+    signal.signal(signal.SIGALRM, raise_timeout)
+    signal.alarm(time)
+    try:
+        yield
+    except TimeoutError:
+        pass
+    finally:
+        signal.signal(signal.SIGALRM, signal.SIG_IGN)
+
+
+def raise_timeout(_signum, _frame):
+    raise TimeoutError
