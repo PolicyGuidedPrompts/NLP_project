@@ -10,6 +10,7 @@ from dataset.dataset import DatasetFactory, AVAILABLE_DATASETS
 from encoder_model.encoder_model import EncoderFactory, AVAILABLE_ENCODERS
 from environment.env import Environment
 from llm_model.llm_model import LLMFactory, AVAILABLE_LLM_MODELS
+from retriever_model.retriever_model import RetrieverFactory, AVAILABLE_RETRIEVERS
 from utils.network_utils import device
 from policy_search.policy_gradient import PolicyGradient
 from policy_search.ppo import PPO
@@ -21,6 +22,7 @@ from utils.utils import get_logger
 ALLOWED_DATASETS = AVAILABLE_DATASETS.keys()  # 'strategy-qa','squad','trivia-qa'
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5','llama-2-7b','flan-t5-base','flan-t5-small'
 ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-en','gte-large'
+ALLOWED_RETRIEVERS = AVAILABLE_RETRIEVERS.keys()  # 'sbert'
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 ALLOWED_NORMALIZE_ENCODING_METHODS = ['l2', 'instance']  # can leave empty for no normalization
 
@@ -38,6 +40,9 @@ parser.add_argument("--llm_model", type=str, required=True, choices=ALLOWED_LLMS
 # Encoder
 parser.add_argument("--encoder_model", type=str, required=True, choices=ALLOWED_ENCODERS)
 parser.add_argument("--normalize_encoding_method", type=str, default='', choices=ALLOWED_NORMALIZE_ENCODING_METHODS)
+# Retriever
+parser.add_argument("--retriever_model", type=str, required=True, choices=ALLOWED_RETRIEVERS)
+parser.add_argument("--retriever_top_k", type=int, default=5)
 # Algorithm
 parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGORITHMS)
 
@@ -61,7 +66,8 @@ parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=450)
 parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
 parser.add_argument("--llm_temperature", type=float, default=0.7)
 # Policy exploration logic
-parser.add_argument("--policy_exploration_logic", type=str, default='epsilon_greedy', choices=ALLOWED_POLICY_EXPLORATION_LOGIC)
+parser.add_argument("--policy_exploration_logic", type=str, default='epsilon_greedy',
+                    choices=ALLOWED_POLICY_EXPLORATION_LOGIC)
 parser.add_argument("--initial_temperature", type=float, default=400)  # For both linear and exponential
 parser.add_argument("--end_temperature", type=float, default=1)  # For linear and epsilon greedy
 # For exponential decay (should be ~0.85), and epsilon greedy (should be ~0.995)
@@ -104,7 +110,8 @@ if __name__ == "__main__":
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
     llm = LLMFactory.create_llm(model_name=namespace.llm_model, config=config)
     encoder = EncoderFactory.create_encoder(model_name=namespace.encoder_model, config=config)
-    retriever_model = None  # TODO - add retriever logic
+    retriever_model = RetrieverFactory.create_retriever(model_name=namespace.retriever_model, config=config,
+                                                        dataset=dataset)
 
     env = Environment(
         dataset=dataset,

@@ -24,7 +24,8 @@ class Config:
         self.normalize_encoding_method = namespace.normalize_encoding_method
 
         # Retriever part
-        self.retriever = namespace.retriever
+        self.retriever_model = namespace.retriever_model
+        self.retriever_top_k = namespace.retriever_top_k
 
         # Algorithm part
         self.algorithm = namespace.algorithm
@@ -54,7 +55,7 @@ class Config:
         self.BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
         # Construct paths relative to this directory
-        retriever_str = f"_retriever={self.retriever}" if self.retriever else ""
+        retriever_str = f"_retriever_model={self.retriever}" if self.retriever else ""
         baseline_str = f"_baseline={self.baseline}" if self.baseline else ""
 
         first_level = f"dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}" \
