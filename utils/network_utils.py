@@ -21,7 +21,7 @@ def build_mlp(input_size, output_size, n_layers, size, config):
     layers.append(nn.ReLU())
 
     for _ in range(n_layers - 1):
-        input_size, size = size, size//2
+        input_size, size = size, size // 2
         layers.append(nn.Linear(input_size, size))
         if config.policy_instance_norm:
             layers.append(nn.InstanceNorm1d(size))

@@ -11,7 +11,7 @@ class Config:
 
         # Dataset part
         self.dataset = namespace.dataset
-        self._dataset_name = self.dataset.replace('/', '-')
+        self._dataset_name = self.dataset.replace("/", "-")
 
         # LLM part
         self.llm_model = namespace.llm_model
@@ -40,7 +40,9 @@ class Config:
         self.learning_rate = namespace.learning_rate
         self.baseline = namespace.baseline
         self.num_batches = namespace.num_batches  # number of batches trained on
-        self.num_episodes_per_batch = namespace.num_episodes_per_batch  # number of steps used to compute each policy update
+        self.num_episodes_per_batch = (
+            namespace.num_episodes_per_batch
+        )  # number of steps used to compute each policy update
         self.gamma = namespace.gamma  # the discount factor
         self.normalize_advantage = True
 
@@ -57,20 +59,24 @@ class Config:
         retriever_str = f"_retriever={self.retriever}" if self.retriever else ""
         baseline_str = f"_baseline={self.baseline}" if self.baseline else ""
 
-        first_level = f"dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}" \
-                      f"_algorithm={self.algorithm}" \
-                      f"_policy_exploration_logic={self.policy_exploration_logic}" \
-                      f"_normalize_encoding_method={self.normalize_encoding_method}" \
-                      f"_policy_instance_norm={self.policy_instance_norm}" \
-                      f"{baseline_str}{retriever_str}"
-        second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}" \
-                       f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}" \
-                       f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}" \
-                       f"_n_layers={self.n_layers}_learning_rate={self.learning_rate}" \
-                       f"_num_batches={self.num_batches}_num_episodes_per_batch={self.num_episodes_per_batch}" \
-                       f"_gamma={self.gamma}_initial_temperature={self.initial_temperature}" \
-                       f"_end_temperature={self.end_temperature}" \
-                       f"_exploration_decay_factor={self.exploration_decay_factor}"
+        first_level = (
+            f"dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}"
+            f"_algorithm={self.algorithm}"
+            f"_policy_exploration_logic={self.policy_exploration_logic}"
+            f"_normalize_encoding_method={self.normalize_encoding_method}"
+            f"_policy_instance_norm={self.policy_instance_norm}"
+            f"{baseline_str}{retriever_str}"
+        )
+        second_level = (
+            f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}"
+            f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}"
+            f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}"
+            f"_n_layers={self.n_layers}_learning_rate={self.learning_rate}"
+            f"_num_batches={self.num_batches}_num_episodes_per_batch={self.num_episodes_per_batch}"
+            f"_gamma={self.gamma}_initial_temperature={self.initial_temperature}"
+            f"_end_temperature={self.end_temperature}"
+            f"_exploration_decay_factor={self.exploration_decay_factor}"
+        )
 
         rel_output_path = os.path.join("results", first_level, second_level)
         self.output_path = os.path.join(self.BASE_DIR, rel_output_path)

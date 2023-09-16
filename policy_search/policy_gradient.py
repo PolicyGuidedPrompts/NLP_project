@@ -15,7 +15,7 @@ from torchsummary import summary
 
 from utils.utils import CaptureStdout
 
-logger = logging.getLogger('root')
+logger = logging.getLogger("root")
 
 
 class PolicyGradient(object):
@@ -36,7 +36,10 @@ class PolicyGradient(object):
 
         # discrete vs continuous action space
         # TODO - should fix things here for continuous action space
-        self.observation_dim, self.action_dim = self.env.observation_space, self.env.action_space
+        self.observation_dim, self.action_dim = (
+            self.env.observation_space,
+            self.env.action_space,
+        )
         self.lr = self.config.learning_rate
 
         self.init_policy()
@@ -47,12 +50,14 @@ class PolicyGradient(object):
         with CaptureStdout() as capture:
             summary(self.policy.network, input_size=(self.observation_dim,))
 
-        logger.info(f"Policy initialized with:"
-                    f"\n{capture.get_output()}"
-                    f"{self.optimizer=})"
-                    f"\n{self.observation_dim=}, "
-                    f"{self.action_dim=}, "
-                    f"{self.lr=}")
+        logger.info(
+            f"Policy initialized with:"
+            f"\n{capture.get_output()}"
+            f"{self.optimizer=})"
+            f"\n{self.observation_dim=}, "
+            f"{self.action_dim=}, "
+            f"{self.lr=}"
+        )
 
     def init_policy(self):
         self._network = build_mlp(
@@ -60,7 +65,7 @@ class PolicyGradient(object):
             output_size=self.action_dim,
             n_layers=self.config.n_layers,
             size=self.config.first_layer_size,
-            config=self.config
+            config=self.config,
         )
 
         self.policy = CategoricalPolicy(self._network, self.config).to(device)
@@ -197,13 +202,24 @@ class PolicyGradient(object):
         return observations, actions, returns, advantages, batch_rewards
 
     def _init_wandb(self):
-        fields_to_exclude = ['output_path', 'model_output', 'log_path', 'scores_output', 'plot_output', 'BASE_DIR',
-                             'dataset', 'seed']
+        fields_to_exclude = [
+            "output_path",
+            "model_output",
+            "log_path",
+            "scores_output",
+            "plot_output",
+            "BASE_DIR",
+            "dataset",
+            "seed",
+        ]
 
         wandb.init(
             project="NLP_project",
-            name=datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + f'-{self.config.run_name}',
-            config={k: v for k, v in vars(self.config).items() if k not in fields_to_exclude}
+            name=datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            + f"-{self.config.run_name}",
+            config={
+                k: v for k, v in vars(self.config).items() if k not in fields_to_exclude
+            },
         )
 
     # TODO - save model every x timestamps
@@ -212,7 +228,13 @@ class PolicyGradient(object):
         averaged_total_rewards = []
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes(current_batch=t)
-            observations, actions, returns, advantages, batch_rewards = self.merge_episodes_to_batch(episodes)
+            (
+                observations,
+                actions,
+                returns,
+                advantages,
+                batch_rewards,
+            ) = self.merge_episodes_to_batch(episodes)
 
             # run training operations
             if self.config.baseline:
@@ -230,7 +252,12 @@ class PolicyGradient(object):
 
             # WANDB LOG
             if self.config.run_name:
-                wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
+                wandb.log(
+                    {
+                        "avg_batch_reward": avg_batch_reward,
+                        "std_batch_reward": std_batch_reward,
+                    }
+                )
 
     # TODO - fix add logic
     def evaluate(self, env=None, num_episodes_per_batch=1):
