@@ -56,7 +56,7 @@ class Dataset(ABC):
 
     @property
     def dataset_path(self):
-        if hasattr(self, "repository"):
+        if hasattr(self, 'repository'):
             return os.path.join(self.repository, self.dataset_name)
         return self.dataset_name
 
@@ -110,21 +110,16 @@ class SquadDataset(Dataset):
 
     def reset(self):
         sample = self.data.sample(1).iloc[0]
-        question, ground_truth = (
-            f'Context: {sample["context"]}\n'
-            f'Question: {sample["question"]}',
-            sample["answer"],
-        )
+        question, ground_truth = f'Question: {sample["question"]}\n' \
+                                 f'Context: {sample["context"]}', sample["answer"]
         return question, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.data.iloc[action - 1]
-        new_prompt = (
-            f'Context: {sample["context"]}\n'
-            f'Question: {sample["question"]}\n'
-            f'Answer: {sample["answer"]}\n'
-            f"{current_prompt}"
-        )
+        new_prompt = f'Question: {sample["question"]}\n' \
+                     f'Context: {sample["context"]}\n' \
+                     f'Answer: {sample["answer"]}\n' \
+                     f'{current_prompt}'
         return new_prompt
 
 

@@ -20,7 +20,6 @@ fonttools
 frozenlist
 fsspec
 gitdb
-sentence-transformers
 GitPython
 huggingface-hub
 idna
