@@ -110,10 +110,10 @@ class SbertEncoder(EncoderModel):
 
 
 AVAILABLE_ENCODERS = {
-    "bert-base-uncased": BertEncoder,
-    "bge-large-en": BgeLargeEnEncoder,
-    "gte-large": GteLargeEncoder,
-    "sbert": SbertEncoder,
+    'bert-base-uncased': BertEncoder,
+    'bge-large-en': BgeLargeEnEncoder,
+    'gte-large': GteLargeEncoder,
+    'sbert': SbertEncoder
 }
 
 
