@@ -3,7 +3,7 @@ import os
 from abc import abstractmethod
 import torch
 from transformers import AutoTokenizer, AutoModel
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer
 import numpy as np
 
 from utils.network_utils import device
@@ -95,18 +95,18 @@ class GteLargeEncoder(EncoderModel):
         return self._normalize_encoding(encoding)
 
 
-class SbertEncoder(EncoderModel):
-    repository = "sentence-transformers"
-    model_name = "paraphrase-distilroberta-base-v1"
-
-    def __init__(self, config):
-        super().__init__(self.model_name, config)
-        self.model = SentenceTransformer(self.model_name).to(device)
-
-    def encode(self, text):
-        with torch.no_grad():
-            encoding = self.model.encode(text, convert_to_tensor=True, device=device).detach().cpu().numpy()
-        return self._normalize_encoding(encoding)
+# class SbertEncoder(EncoderModel):
+#     repository = "sentence-transformers"
+#     model_name = "paraphrase-distilroberta-base-v1"
+#
+#     def __init__(self, config):
+#         super().__init__(self.model_name, config)
+#         self.model = SentenceTransformer(self.model_name).to(device)
+#
+#     def encode(self, text):
+#         with torch.no_grad():
+#             encoding = self.model.encode(text, convert_to_tensor=True, device=device).detach().cpu().numpy()
+#         return self._normalize_encoding(encoding)
 
 
 AVAILABLE_ENCODERS = {
