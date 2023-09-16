@@ -134,7 +134,7 @@ class TriviaQaDataset(Dataset):
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()
+        data = load_dataset(self.dataset_path, 'rc', cache_dir=self.datasets_dir)["train"].to_pandas()
         return data[["question", "answer"]]
 
     def reset(self):
