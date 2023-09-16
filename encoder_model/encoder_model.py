@@ -113,7 +113,7 @@ AVAILABLE_ENCODERS = {
     'bert-base-uncased': BertEncoder,
     'bge-large-en': BgeLargeEnEncoder,
     'gte-large': GteLargeEncoder,
-    'sbert': SbertEncoder
+    # 'sbert': SbertEncoder
 }
 
 
