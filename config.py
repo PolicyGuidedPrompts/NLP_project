@@ -70,7 +70,12 @@ class Config:
         second_level = (
             f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}"
             f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}"
-            f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}"
+            f"_llm_temperature={self.llm_temperature}"
+
+        )
+
+        third_level = (
+            f"eps_clip={self.eps_clip}"
             f"_n_layers={self.n_layers}_learning_rate={self.learning_rate}"
             f"_num_batches={self.num_batches}_num_episodes_per_batch={self.num_episodes_per_batch}"
             f"_gamma={self.gamma}_initial_temperature={self.initial_temperature}"
@@ -78,7 +83,7 @@ class Config:
             f"_exploration_decay_factor={self.exploration_decay_factor}"
         )
 
-        rel_output_path = os.path.join("results", first_level, second_level)
+        rel_output_path = os.path.join("results", first_level, second_level, third_level)
         self.output_path = os.path.join(self.BASE_DIR, rel_output_path)
 
         # Note: Using os.path.join ensures the path is constructed correctly for the operating system.
