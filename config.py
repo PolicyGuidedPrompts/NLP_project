@@ -11,7 +11,7 @@ class Config:
 
         # Dataset part
         self.dataset = namespace.dataset
-        self._dataset_name = self.dataset.replace("/", "-")
+        self._dataset_name = self.dataset.replace('/', '-')
 
         # LLM part
         self.llm_model = namespace.llm_model
@@ -40,9 +40,7 @@ class Config:
         self.learning_rate = namespace.learning_rate
         self.baseline = namespace.baseline
         self.num_batches = namespace.num_batches  # number of batches trained on
-        self.num_episodes_per_batch = (
-            namespace.num_episodes_per_batch
-        )  # number of steps used to compute each policy update
+        self.num_episodes_per_batch = namespace.num_episodes_per_batch  # number of steps used to compute each policy update
         self.gamma = namespace.gamma  # the discount factor
         self.normalize_advantage = True
 

@@ -38,11 +38,7 @@ class BasePolicy:
         sampled_action = action_distribution.sample()
 
         # Used only to collect log_probs for old policy, not for the one being trained, hence detach().numpy()
-        log_probs = (
-            action_distribution.log_prob(sampled_action).detach().cpu().numpy()
-            if return_log_prob
-            else None
-        )
+        log_probs = action_distribution.log_prob(sampled_action).detach().cpu().numpy() if return_log_prob else None
 
         return sampled_action.detach().cpu().numpy(), log_probs
 
@@ -65,37 +61,30 @@ class CategoricalPolicy(BasePolicy, nn.Module):
         """
         logits = self.network(observations)
         softmax_temperature = self._get_softmax_temperature(current_batch)
-        distribution = torch.distributions.Categorical(
-            logits=logits / softmax_temperature
-        )
+        distribution = torch.distributions.Categorical(logits=logits / softmax_temperature)
         return distribution
 
     def _get_softmax_temperature(self, current_batch):
-        if self.config.policy_exploration_logic == "linear_temperature_decay":
+        if self.config.policy_exploration_logic == 'linear_temperature_decay':
             return self._get_linear_softmax_temperature(current_batch)
-        elif self.config.policy_exploration_logic == "exponential_temperature_decay":
+        elif self.config.policy_exploration_logic == 'exponential_temperature_decay':
             return self._get_exp_softmax_temperature(current_batch)
-        elif self.config.policy_exploration_logic == "epsilon_greedy":
+        elif self.config.policy_exploration_logic == 'epsilon_greedy':
             return self._get_epsilon_greedy_softmax_temperature(current_batch)
         else:
             raise NotImplementedError
 
     def _get_exp_softmax_temperature(self, current_batch):
-        return (
-            self.config.initial_temperature
-            * (self.config.exploration_decay_factor**current_batch)
-            + 1
-        )
+        return self.config.initial_temperature * (self.config.exploration_decay_factor ** current_batch) + 1
 
     def _get_linear_softmax_temperature(self, current_batch):
-        return self.config.initial_temperature + (
-            self.config.end_temperature - self.config.initial_temperature
-        ) * (current_batch / self.config.num_batches)
+        return self.config.initial_temperature + (self.config.end_temperature - self.config.initial_temperature) * (
+                current_batch / self.config.num_batches)
 
     def _get_epsilon_greedy_softmax_temperature(self, current_batch):
         self.epsilon = self.config.exploration_decay_factor**current_batch
         if np.random.rand() < self.epsilon:
-            return float("inf")
+            return float('inf')
         else:
             return self.config.end_temperature
 
