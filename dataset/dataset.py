@@ -1,10 +1,11 @@
 import logging
 import os
+import re
+import string
 from abc import ABC, abstractmethod
+from collections import Counter
 
 from datasets import load_dataset
-from nltk.translate.bleu_score import sentence_bleu
-from sklearn.metrics import f1_score
 
 logger = logging.getLogger("root")
 
@@ -16,20 +17,42 @@ class Dataset(ABC):
 
     def __init__(self):
         self.data = self.load_from_repository()
-        logger.info(
-            f"Loaded dataset {self.dataset_name=}, scoring method: {self.get_scoring_method_name()}"
-        )
+        logger.info(f"Scoring method: {self.get_scoring_method_name()}")
 
-    @abstractmethod
     def score(self, ground_truth, generated_answer):
-        pass
+        prediction_tokens = self.normalize_answer(generated_answer).split()
+        ground_truth_tokens = self.normalize_answer(ground_truth).split()
+        common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
+        num_same = sum(common.values())
+        if num_same == 0:
+            return 0
+        precision = 1.0 * num_same / len(prediction_tokens)
+        recall = 1.0 * num_same / len(ground_truth_tokens)
+        f1 = (2 * precision * recall) / (precision + recall)
+        return 2 * f1 - 1  # normalize between -1 and 1
 
-    @abstractmethod
-    def reset(self):
-        pass
+    @staticmethod
+    def normalize_answer(s):
+        """Lower text and remove punctuation, articles and extra whitespace."""
 
-    def update_prompt(self, action, current_prompt):
-        pass
+        def remove_articles(text):
+            return re.sub(r"\b(a|an|the)\b", " ", text)
+
+        def white_space_fix(text):
+            return " ".join(text.split())
+
+        def remove_punc(text):
+            exclude = set(string.punctuation)
+            return "".join(ch for ch in text if ch not in exclude)
+
+        def lower(text):
+            return text.lower()
+
+        return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+    @staticmethod
+    def get_scoring_method_name():
+        return "f1_score"
 
     @property
     def dataset_path(self):
@@ -37,33 +60,23 @@ class Dataset(ABC):
             return os.path.join(self.repository, self.dataset_name)
         return self.dataset_name
 
+    @abstractmethod
+    def load_from_repository(self):
+        pass
+
+    @abstractmethod
+    def reset(self):
+        pass
+
+    @abstractmethod
+    def update_prompt(self, action, current_prompt):
+        pass
+
 
 # TODO - implement reset + update_prompt for other datasets
 class StrategyQaDataset(Dataset):
     repository = "wics"
     dataset_name = "strategy-qa"
-
-    # TODO - trim, lower, ground_truth in generated answer or vise versa
-    def score(self, ground_truth, generated_answer):
-        return 1 if ground_truth == generated_answer else -1
-
-    def reset(self):
-        sample = self.data.sample(1).iloc[0]
-        question, ground_truth = (
-            f'Question: {sample["question"]}\n' f'Facts: {sample["facts"]}',
-            sample["answer"],
-        )
-        return question, ground_truth
-
-    def update_prompt(self, action, current_prompt):
-        sample = self.data.iloc[action - 1]
-        new_prompt = (
-            f'Question: {sample["question"]}\n'
-            f'Facts: {sample["facts"]}\n'
-            f'Answer: {sample["answer"]}\n'
-            f"{current_prompt}"
-        )
-        return new_prompt
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from {self.repository}")
@@ -73,55 +86,6 @@ class StrategyQaDataset(Dataset):
             .assign(answer=lambda x: x["answer"].astype(str))
         )
 
-    @classmethod
-    def get_scoring_method_name(cls):
-        return "exact_match"
-
-
-class SquadDataset(Dataset):
-    dataset_name = "squad"
-
-    def score(self, ground_truth, generated_answer):
-        return sentence_bleu([ground_truth.split()], generated_answer.split())
-
-    def reset(self):
-        sample = self.data.sample(1).iloc[0]
-        question, ground_truth = (
-            f'Question: {sample["question"]}\n' f'Context: {sample["context"]}',
-            sample["answer"],
-        )
-        return question, ground_truth
-
-    def update_prompt(self, action, current_prompt):
-        sample = self.data.iloc[action - 1]
-        new_prompt = (
-            f'Question: {sample["question"]}\n'
-            f'Context: {sample["context"]}\n'
-            f'Answer: {sample["answer"]}\n'
-            f"{current_prompt}"
-        )
-        return new_prompt
-
-    def load_from_repository(self):
-        logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)[
-            "train"
-        ].to_pandas()
-        data["answer"] = data["answers"].apply(lambda x: x["text"][0] if x else None)
-        return data[["question", "answer", "context"]]
-
-    @classmethod
-    def get_scoring_method_name(cls):
-        return "sentence_bleu"
-
-
-# TODO - slow to load, skipping for now
-class TriviaQaDataset(Dataset):
-    dataset_name = "trivia_qa"
-
-    def score(self, ground_truth, generated_answer):
-        return f1_score(ground_truth.split(), generated_answer.split(), average="micro")
-
     def reset(self):
         sample = self.data.sample(1).iloc[0]
         question, ground_truth = (
@@ -140,6 +104,45 @@ class TriviaQaDataset(Dataset):
         )
         return new_prompt
 
+
+class SquadDataset(Dataset):
+    dataset_name = "squad"
+
+    def __init__(self):
+        super().__init__()
+
+    def load_from_repository(self):
+        logger.info(f"Loading dataset {self.dataset_name}")
+        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)[
+            "train"
+        ].to_pandas()
+        data["answer"] = data["answers"].apply(lambda x: x["text"][0] if x else None)
+        return data[["question", "answer", "context"]]
+
+    def reset(self):
+        sample = self.data.sample(1).iloc[0]
+        question, ground_truth = (
+            f'Context: {sample["context"]}\n'
+            f'Question: {sample["question"]}',
+            sample["answer"],
+        )
+        return question, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.data.iloc[action - 1]
+        new_prompt = (
+            f'Context: {sample["context"]}\n'
+            f'Question: {sample["question"]}\n'
+            f'Answer: {sample["answer"]}\n'
+            f"{current_prompt}"
+        )
+        return new_prompt
+
+
+# TODO - slow to load, skipping for now
+class TriviaQaDataset(Dataset):
+    dataset_name = "trivia_qa"
+
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name}")
         data = load_dataset(self.dataset_path, "rc", cache_dir=self.datasets_dir)[
@@ -147,9 +150,23 @@ class TriviaQaDataset(Dataset):
         ].to_pandas()
         return data[["question", "answer"]]
 
-    @classmethod
-    def get_scoring_method_name(cls):
-        return "f1_score"
+    def reset(self):
+        sample = self.data.sample(1).iloc[0]
+        question, ground_truth = (
+            f'Question: {sample["question"]}\n' f'Facts: {sample["facts"]}',
+            sample["answer"],
+        )
+        return question, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.data.iloc[action - 1]
+        new_prompt = (
+            f'Question: {sample["question"]}\n'
+            f'Facts: {sample["facts"]}\n'
+            f'Answer: {sample["answer"]}\n'
+            f"{current_prompt}"
+        )
+        return new_prompt
 
 
 AVAILABLE_DATASETS = {

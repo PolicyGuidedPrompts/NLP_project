@@ -245,7 +245,7 @@ class PolicyGradient(object):
             avg_batch_reward = batch_rewards.mean()
             std_batch_reward = batch_rewards.std()
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
-                t, avg_batch_reward, std_batch_reward
+                t+1, avg_batch_reward, std_batch_reward
             )
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
@@ -284,7 +284,7 @@ class PolicyGradient(object):
         """
         Apply procedures of training for a PG.
         """
-        logger.info("Training started...")
+        logger.info("Start Training...")
         with self.wandb_context():
             try:
                 self.train()

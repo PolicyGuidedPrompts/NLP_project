@@ -92,7 +92,7 @@ class PPO(PolicyGradient):
             avg_batch_reward = batch_rewards.mean()
             std_batch_reward = batch_rewards.std()
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
-                t, avg_batch_reward, std_batch_reward
+                t+1, avg_batch_reward, std_batch_reward
             )
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
