@@ -104,6 +104,7 @@ class SquadDataset(Dataset):
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name}")
+        logger.error(f"***** cache_dir {self.datasets_dir} *****")
         data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()
         data['answer'] = data['answers'].apply(lambda x: x['text'][0] if x else None)
         return data[["question", "answer", "context"]]
