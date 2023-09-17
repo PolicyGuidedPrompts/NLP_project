@@ -262,6 +262,7 @@ class PolicyGradient(object):
             try:
                 self.train()
             except Exception as e:
+                print(e)
                 logger.error(f"Training finished unexpectedly - {e}")
             finally:
                 logger.info("Training completed...")
