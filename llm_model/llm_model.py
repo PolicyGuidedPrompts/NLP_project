@@ -11,7 +11,6 @@ from utils.utils import timeout
 logger = logging.getLogger('root')
 
 
-# TODO - remove bitsandbytes
 class LLMModel:
     script_dir = os.path.dirname(os.path.realpath(__file__))
     models_dir = os.path.join(script_dir, "../saved_models/llm_models")
@@ -86,13 +85,6 @@ class Llama2LLM(LLMModel):
         self.B_SYS, self.E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
         self.prefix = "Answer only the last question in the same fashion other questions were answered."
 
-        # self.bnb_config = transformers.BitsAndBytesConfig(
-        #     load_in_4bit=True,
-        #     bnb_4bit_quant_type='nf4',
-        #     bnb_4bit_use_double_quant=True,
-        #     bnb_4bit_compute_dtype=torch.bfloat16
-        # )
-
         self.model_config = transformers.AutoConfig.from_pretrained(
             self.model_path,
             use_auth_token=self.hf_auth,
@@ -130,7 +122,8 @@ class FlanT5BaseLLM(LLMModel):
     def __init__(self, config):
         super().__init__(config)
         self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
+        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
+                                                                             cache_dir=self.models_dir).to(device)
         self.model.eval()
 
         if not self.tokenizer.pad_token:
@@ -202,7 +195,7 @@ class GPT35TurboLLM0613(LLMModel):
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
     #  retry for 3 times with a 1-minute wait
-    @retry(stop_max_attempt_number=3, wait_fixed=60*1000)
+    @retry(stop_max_attempt_number=3, wait_fixed=60 * 1000)
     def generate_answer(self, prompt):
         try:
             with timeout(5):  # Set the timeout value for 5 seconds
