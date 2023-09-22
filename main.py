@@ -19,7 +19,8 @@ from utils.utils import get_logger
 
 ALLOWED_DATASETS = AVAILABLE_DATASETS.keys()  # 'strategy-qa','squad','trivia-qa'
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5','llama-2-7b','flan-t5-base','flan-t5-small'
-ALLOWED_RETRIEVERS = AVAILABLE_RETRIEVERS.keys()  # 'sbert'
+# 'sbert', 'bert-no-op-retriever', 'bge-large-en-no-op-retriever', 'gte-large-no-op-retriever'
+ALLOWED_RETRIEVERS = AVAILABLE_RETRIEVERS.keys()
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 ALLOWED_NORMALIZE_ENCODING_METHODS = ['l2', 'instance']  # can leave empty for no normalization
 
@@ -37,6 +38,7 @@ parser.add_argument("--llm_model", type=str, required=True, choices=ALLOWED_LLMS
 # Retriever
 parser.add_argument("--retriever_model", type=str, required=True, choices=ALLOWED_RETRIEVERS)
 parser.add_argument("--retriever_top_k", type=int, default=100)
+parser.add_argument("--normalize_encoding_method", type=str, default='', choices=ALLOWED_NORMALIZE_ENCODING_METHODS)
 # Algorithm
 parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGORITHMS)
 
@@ -44,7 +46,6 @@ parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGO
 parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--baseline", action="store_true", default=False)
 parser.add_argument("--policy_instance_norm", action="store_true", default=False)
-parser.add_argument("--retriever", type=bool, default=False)
 parser.add_argument("--eps_clip", type=float, default=0.2)  # For PPO
 parser.add_argument("--update_freq", type=int, default=5)  # For PPO
 parser.add_argument("--n_layers", type=int, default=1)
@@ -57,13 +58,12 @@ parser.add_argument("--gamma", type=float, default=1.0)  # discount factor
 parser.add_argument("--normalize_advantage", type=bool, default=True)
 # TODO - should be a function of the model, for example t5 flan base can only handle 512 hence should be configured to 450 +-
 parser.add_argument("--llm_max_prompt_tokenized_len", type=int, default=450)
-parser.add_argument("--llm_max_output_tokenized_len", type=int, default=15)
+parser.add_argument("--llm_max_output_tokenized_len", type=int, default=50)
 parser.add_argument("--llm_temperature", type=float, default=0.7)
 # Policy exploration logic
 parser.add_argument("--policy_exploration_logic", type=str, default='epsilon_greedy', choices=ALLOWED_POLICY_EXPLORATION_LOGIC)
 parser.add_argument("--initial_temperature", type=float, default=400)  # For both linear and exponential
 parser.add_argument("--end_temperature", type=float, default=1)  # For linear and epsilon greedy
-# For exponential decay (should be ~0.85), and epsilon greedy (should be ~0.995)
 parser.add_argument("--exploration_decay_factor", type=float, default=0.995)
 
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -71,7 +71,6 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
 
-# TODO - if time permits add retriever logic
 # TODO - don't forget in readme to specify env variables roles
 # TODO - logger should also log errors
 # TODO - see if can reduce size of requirements.txt
@@ -102,7 +101,6 @@ if __name__ == "__main__":
 
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
     llm = LLMFactory.create_llm(model_name=namespace.llm_model, config=config)
-    # TODO - remove encoder_model file
     retriever = RetrieverFactory.create_retriever(model_name=namespace.retriever_model, config=config, dataset=dataset)
 
     env = Environment(

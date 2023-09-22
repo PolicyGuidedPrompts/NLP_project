@@ -22,6 +22,7 @@ class Config:
         # Retriever part
         self.retriever_model = namespace.retriever_model
         self.retriever_top_k = namespace.retriever_top_k
+        self.normalize_encoding_method = namespace.normalize_encoding_method
 
         # Algorithm part
         self.algorithm = namespace.algorithm
@@ -56,6 +57,7 @@ class Config:
         first_level = f"dataset={self._dataset_name}_llm={self.llm_model}" \
                       f"_retriever={self.retriever_model}_retriever_top_k={self.retriever_top_k}" \
                       f"_algorithm={self.algorithm}" \
+                      f"_normalize_encoding_method={self.normalize_encoding_method}" \
                       f"_policy_exploration_logic={self.policy_exploration_logic}" \
                       f"_policy_instance_norm={self.policy_instance_norm}" \
                       f"{baseline_str}"

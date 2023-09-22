@@ -103,9 +103,8 @@ class SquadDataset(Dataset):
     dataset_name = "squad"
 
     def load_from_repository(self):
-        # TODO - remove [:50] when done testing
         logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()[:50]
+        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()
         data['answer'] = data['answers'].apply(lambda x: x['text'][0] if x else None)
         return data[["question", "answer", "context"]]
 
