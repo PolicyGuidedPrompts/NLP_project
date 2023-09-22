@@ -9,7 +9,7 @@ from utils.network_utils import device
 
 logger = logging.getLogger('root')
 
-
+# TODO - if time permits make abstract classes
 class EncoderModel:
     script_dir = os.path.dirname(os.path.realpath(__file__))
     models_dir = os.path.join(script_dir, "../saved_models/encoder_models")

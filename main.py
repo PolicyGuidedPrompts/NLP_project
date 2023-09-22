@@ -7,20 +7,19 @@ import torch
 
 from config import get_config
 from dataset.dataset import DatasetFactory, AVAILABLE_DATASETS
-from encoder_model.encoder_model import EncoderFactory, AVAILABLE_ENCODERS
 from environment.env import Environment
 from llm_model.llm_model import LLMFactory, AVAILABLE_LLM_MODELS
+from retriever_model.retriever_model import RetrieverFactory, AVAILABLE_RETRIEVERS
 from utils.network_utils import device
 from policy_search.policy_gradient import PolicyGradient
 from policy_search.ppo import PPO
 from utils.utils import get_logger
 
-# TODO - epsilon greedy
-# TODO - minimize requirements
+# TODO now - go over all possible configuration and see that it runs
 
 ALLOWED_DATASETS = AVAILABLE_DATASETS.keys()  # 'strategy-qa','squad','trivia-qa'
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()  # 'gpt2','gpt3.5','llama-2-7b','flan-t5-base','flan-t5-small'
-ALLOWED_ENCODERS = AVAILABLE_ENCODERS.keys()  # 'bert-base-uncased','bge-large-en','gte-large'
+ALLOWED_RETRIEVERS = AVAILABLE_RETRIEVERS.keys()  # 'sbert'
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 ALLOWED_NORMALIZE_ENCODING_METHODS = ['l2', 'instance']  # can leave empty for no normalization
 
@@ -35,9 +34,9 @@ parser.add_argument("--run_name", type=str, default=None)
 # Required
 parser.add_argument("--dataset", type=str, required=True, choices=ALLOWED_DATASETS)
 parser.add_argument("--llm_model", type=str, required=True, choices=ALLOWED_LLMS)
-# Encoder
-parser.add_argument("--encoder_model", type=str, required=True, choices=ALLOWED_ENCODERS)
-parser.add_argument("--normalize_encoding_method", type=str, default='', choices=ALLOWED_NORMALIZE_ENCODING_METHODS)
+# Retriever
+parser.add_argument("--retriever_model", type=str, required=True, choices=ALLOWED_RETRIEVERS)
+parser.add_argument("--retriever_top_k", type=int, default=100)
 # Algorithm
 parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGORITHMS)
 
@@ -103,13 +102,13 @@ if __name__ == "__main__":
 
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
     llm = LLMFactory.create_llm(model_name=namespace.llm_model, config=config)
-    encoder = EncoderFactory.create_encoder(model_name=namespace.encoder_model, config=config)
-    retriever_model = None  # TODO - add retriever logic
+    # TODO - remove encoder_model file
+    retriever = RetrieverFactory.create_retriever(model_name=namespace.retriever_model, config=config, dataset=dataset)
 
     env = Environment(
         dataset=dataset,
         llm=llm,
-        encoder=encoder,
+        retriever=retriever,
         seed=namespace.seed,
     )
 

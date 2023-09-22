@@ -72,7 +72,7 @@ class Dataset(ABC):
     def update_prompt(self, action, current_prompt):
         pass
 
-
+# TODO - prepare dataset in other datasets as well
 # TODO - implement reset + update_prompt for other datasets
 class StrategyQaDataset(Dataset):
     repository = "wics"
@@ -91,7 +91,7 @@ class StrategyQaDataset(Dataset):
         return question, ground_truth
 
     def update_prompt(self, action, current_prompt):
-        sample = self.data.iloc[action - 1]
+        sample = self.data.iloc[action]
         new_prompt = f'Question: {sample["question"]}\n' \
                      f'Facts: {sample["facts"]}\n' \
                      f'Answer: {sample["answer"]}\n' \
@@ -103,8 +103,9 @@ class SquadDataset(Dataset):
     dataset_name = "squad"
 
     def load_from_repository(self):
+        # TODO - remove [:50] when done testing
         logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()
+        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()[:50]
         data['answer'] = data['answers'].apply(lambda x: x['text'][0] if x else None)
         return data[["question", "answer", "context"]]
 
@@ -115,12 +116,15 @@ class SquadDataset(Dataset):
         return question, ground_truth
 
     def update_prompt(self, action, current_prompt):
-        sample = self.data.iloc[action - 1]
+        sample = self.data.iloc[action]
         new_prompt = f'Question: {sample["question"]}\n' \
                      f'Context: {sample["context"]}\n' \
                      f'Answer: {sample["answer"]}\n' \
                      f'{current_prompt}'
         return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        return self.data.apply(lambda item: 'Question: ' + item['question'] + '\nContext: ' + item['context'], axis=1).to_numpy()
 
 
 # TODO - slow to load, skipping for now

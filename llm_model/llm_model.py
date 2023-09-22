@@ -122,8 +122,7 @@ class FlanT5BaseLLM(LLMModel):
     def __init__(self, config):
         super().__init__(config)
         self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
-                                                                             cache_dir=self.models_dir).to(device)
+        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
         self.model.eval()
 
         if not self.tokenizer.pad_token:
@@ -195,7 +194,7 @@ class GPT35TurboLLM0613(LLMModel):
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
     #  retry for 3 times with a 1-minute wait
-    @retry(stop_max_attempt_number=3, wait_fixed=60 * 1000)
+    @retry(stop_max_attempt_number=3, wait_fixed=60*1000)
     def generate_answer(self, prompt):
         try:
             with timeout(5):  # Set the timeout value for 5 seconds

@@ -12,7 +12,6 @@ from utils.network_utils import build_mlp, device, np2torch
 from policy_search.policy import CategoricalPolicy
 from policy_search.episode import Episode
 from torchsummary import summary
-import traceback
 
 from utils.utils import CaptureStdout
 
@@ -263,7 +262,6 @@ class PolicyGradient(object):
             try:
                 self.train()
             except Exception as e:
-                print(f"Training finished unexpectedly - {e}\n{traceback.format_exc()}")
                 logger.error(f"Training finished unexpectedly - {e}")
             finally:
                 logger.info("Training completed...")

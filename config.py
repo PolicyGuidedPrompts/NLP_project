@@ -19,12 +19,9 @@ class Config:
         self.llm_max_output_tokenized_len = namespace.llm_max_output_tokenized_len
         self.llm_temperature = namespace.llm_temperature
 
-        # Encoder part
-        self.encoder_model = namespace.encoder_model
-        self.normalize_encoding_method = namespace.normalize_encoding_method
-
         # Retriever part
-        self.retriever = namespace.retriever
+        self.retriever_model = namespace.retriever_model
+        self.retriever_top_k = namespace.retriever_top_k
 
         # Algorithm part
         self.algorithm = namespace.algorithm
@@ -54,15 +51,14 @@ class Config:
         self.BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
         # Construct paths relative to this directory
-        retriever_str = f"_retriever={self.retriever}" if self.retriever else ""
         baseline_str = f"_baseline={self.baseline}" if self.baseline else ""
 
-        first_level = f"dataset={self._dataset_name}_llm={self.llm_model}_encoder={self.encoder_model}" \
+        first_level = f"dataset={self._dataset_name}_llm={self.llm_model}" \
+                      f"_retriever={self.retriever_model}_retriever_top_k={self.retriever_top_k}" \
                       f"_algorithm={self.algorithm}" \
                       f"_policy_exploration_logic={self.policy_exploration_logic}" \
-                      f"_normalize_encoding_method={self.normalize_encoding_method}" \
                       f"_policy_instance_norm={self.policy_instance_norm}" \
-                      f"{baseline_str}{retriever_str}"
+                      f"{baseline_str}"
         second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}" \
                        f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}" \
                        f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}" \
