@@ -86,7 +86,7 @@ class BertEncoder(RetrieverModel):
         return self._normalize_encoding(encoding)
 
     def retrieve(self, _encoding):
-        return np.array(range(len(self.dataset)))
+        return np.array(range(len(self.dataset.data)))
 
 
 class BgeLargeEnEncoder(RetrieverModel):
@@ -109,7 +109,7 @@ class BgeLargeEnEncoder(RetrieverModel):
         return self._normalize_encoding(encoding)
 
     def retrieve(self, _encoding):
-        return np.array(range(len(self.dataset)))
+        return np.array(range(len(self.dataset.data)))
 
 
 class GteLargeEncoder(RetrieverModel):
@@ -132,7 +132,7 @@ class GteLargeEncoder(RetrieverModel):
         return self._normalize_encoding(encoding)
 
     def retrieve(self, _encoding):
-        return np.array(range(len(self.dataset)))
+        return np.array(range(len(self.dataset.data)))
 
 
 AVAILABLE_RETRIEVERS = {

@@ -37,7 +37,7 @@ parser.add_argument("--dataset", type=str, required=True, choices=ALLOWED_DATASE
 parser.add_argument("--llm_model", type=str, required=True, choices=ALLOWED_LLMS)
 # Retriever
 parser.add_argument("--retriever_model", type=str, required=True, choices=ALLOWED_RETRIEVERS)
-parser.add_argument("--retriever_top_k", type=int, default=100)
+parser.add_argument("--retriever_top_k", type=int)
 parser.add_argument("--normalize_encoding_method", type=str, default='', choices=ALLOWED_NORMALIZE_ENCODING_METHODS)
 # Algorithm
 parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGORITHMS)

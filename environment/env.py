@@ -26,7 +26,8 @@ class Environment:
         self.llm = llm
         self.terminate_action = terminate_action
 
-        self.action_space = self.retriever.top_k + 1  # +1 for terminate action
+        # +1 for terminate action
+        self.action_space = self.retriever.top_k + 1 if hasattr(self.retriever, 'top_k') else len(dataset.data) + 1
 
         # Define observation space based on a sample observation
         # Half for generated prompt and half for storing the original question encodings
