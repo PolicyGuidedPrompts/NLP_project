@@ -186,6 +186,8 @@ class PolicyGradient(object):
         observations = np.concatenate([episode.observations for episode in episodes])
         actions = np.concatenate([episode.actions for episode in episodes])
 
+        logger.debug(f"chosen actions in entire batch: {actions}")
+
         # compute Q-val estimates (discounted future returns) for each time step
         returns = self.get_returns(episodes)
 
