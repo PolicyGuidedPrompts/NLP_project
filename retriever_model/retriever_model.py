@@ -51,7 +51,18 @@ class SBertRetriever(RetrieverModel):
         self.model = SentenceTransformer(self.model_path, cache_folder=self.models_dir).to(device)
         dataset_to_retriever = dataset.prepare_dataset_to_retriever()
         self.top_k = config.retriever_top_k
-        self.dataset_embeddings = self.model.encode(dataset_to_retriever)
+
+        self.cache_dir = os.path.join(RetrieverModel.script_dir, f"../dataset_encodings/{self.model_name}")
+        self.cache_file = os.path.join(self.cache_dir, f"{dataset.dataset_name}.pt")
+
+        if os.path.exists(self.cache_file):
+            self.dataset_embeddings = torch.load(self.cache_file)
+        else:
+            self.dataset_embeddings = self.model.encode(dataset_to_retriever)
+            # Ensure cache directory exists
+            if not os.path.exists(self.cache_dir):
+                os.makedirs(self.cache_dir)
+            torch.save(self.dataset_embeddings, self.cache_file)
 
     # TODO now - add encode function
     def encode(self, input):
@@ -63,9 +74,10 @@ class SBertRetriever(RetrieverModel):
         corpus_embeddings_tensor = util.normalize_embeddings(np2torch(self.dataset_embeddings))
 
         hits = util.semantic_search(query_embeddings=encoding_tensor, corpus_embeddings=corpus_embeddings_tensor,
-                                    score_function=util.dot_score, top_k=self.top_k)
+                                    score_function=util.dot_score, top_k=self.top_k + 1)
 
-        return np.array([hit['corpus_id'] for hit in hits[0]])
+        # remove first hit which is the question itself
+        return np.array([hit['corpus_id'] for hit in hits[0][1:]])
 
 
 class BertEncoder(RetrieverModel):

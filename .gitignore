@@ -79,5 +79,6 @@ saved_models/
 saved_datasets/
 results/
 wandb/
-
+dataset_encodings/
+```
 
