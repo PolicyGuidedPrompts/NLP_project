@@ -55,6 +55,8 @@ class PPO(PolicyGradient):
         old_logprobs = np.concatenate([episode.old_logprobs for episode in episodes])
         actions = np.concatenate([episode.actions for episode in episodes])
 
+        logger.debug(f"chosen actions in entire batch: {actions}")
+
         # compute Q-val estimates (discounted future returns) for each time step
         returns = self.get_returns(episodes)
 
