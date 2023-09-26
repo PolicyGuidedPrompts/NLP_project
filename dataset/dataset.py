@@ -4,6 +4,7 @@ import re
 import string
 from abc import ABC, abstractmethod
 from collections import Counter
+import pandas as pd
 
 from datasets import load_dataset
 
@@ -31,8 +32,7 @@ class Dataset(ABC):
         f1 = (2 * precision * recall) / (precision + recall)
         return 2 * f1 - 1  # normalize between -1 and 1
 
-    @staticmethod
-    def normalize_answer(s):
+    def normalize_answer(self, s):
         """Lower text and remove punctuation, articles and extra whitespace."""
 
         def remove_articles(text):
@@ -72,6 +72,7 @@ class Dataset(ABC):
     def update_prompt(self, action, current_prompt):
         pass
 
+
 # TODO - prepare dataset in other datasets as well
 # TODO - implement reset + update_prompt for other datasets
 class StrategyQaDataset(Dataset):
@@ -98,6 +99,9 @@ class StrategyQaDataset(Dataset):
                      f'{current_prompt}'
         return new_prompt
 
+    def prepare_dataset_to_retriever(self):
+        return self.data.apply(lambda item: 'Question: ' + item['question'], axis=1).to_numpy()
+
 
 class SquadDataset(Dataset):
     dataset_name = "squad"
@@ -123,31 +127,66 @@ class SquadDataset(Dataset):
         return new_prompt
 
     def prepare_dataset_to_retriever(self):
-        return self.data.apply(lambda item: 'Question: ' + item['question'] + '\nContext: ' + item['context'], axis=1).to_numpy()
+        return self.data.apply(lambda item: 'Question: ' + item['question'], axis=1).to_numpy()
 
 
-# TODO - slow to load, skipping for now
-class TriviaQaDataset(Dataset):
-    dataset_name = "trivia_qa"
+class OpenTDB(Dataset):
+    dataset_name = "open_tdb"
+    local_path_to_data_set = "../data/open_tdb.csv"
 
     def load_from_repository(self):
-        logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path, 'rc', cache_dir=self.datasets_dir)["train"].to_pandas()
-        return data[["question", "answer"]]
+        logger.info(f"Loading dataset {self.dataset_name} from local CSV")
+        return pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))
 
     def reset(self):
-        # TODO
-        pass
+        sample = self.data.sample(1).iloc[0]
+        question, ground_truth = f'Question: {sample["question"]}', sample["answer"]
+        return question, ground_truth
 
     def update_prompt(self, action, current_prompt):
-        # TODO
-        pass
+        sample = self.data.iloc[action]
+        new_prompt = f'Question: {sample["question"]}\n' \
+                     f'Answer: {sample["answer"]}\n' \
+                     f'{current_prompt}'
+        return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        return self.data.apply(lambda item: 'Question: ' + item['question'], axis=1).to_numpy()
+
+
+class AquaRat(Dataset):
+    dataset_name = "aqua_rat"
+    local_path_to_data_set = "../data/aqua_rat.csv"
+
+    def load_from_repository(self):
+        logger.info(f"Loading dataset {self.dataset_name} from local CSV")
+        # TODO - remove [:50]
+        return pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[:50]
+
+    def reset(self):
+        sample = self.data.sample(1).iloc[0]
+        question, ground_truth = f'Question: {sample["question"]}\n' \
+                                 f'Options: {sample["options"]}\n', sample["answer"]
+        return question, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.data.iloc[action]
+        new_prompt = f'Question: {sample["question"]}\n' \
+                     f'Options: {sample["options"]}\n' \
+                     f'Rationale: {sample["rationale"]}\n' \
+                     f'Answer: {sample["answer"]}\n' \
+                     f'{current_prompt}'
+        return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        return self.data.apply(lambda item: 'Question: ' + item['question'], axis=1).to_numpy()
 
 
 AVAILABLE_DATASETS = {
     'strategy-qa': StrategyQaDataset,
     'squad': SquadDataset,
-    'trivia-qa': TriviaQaDataset
+    'open-tdb': OpenTDB,
+    'aqua-rat': AquaRat
 }
 
 

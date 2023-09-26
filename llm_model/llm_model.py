@@ -122,7 +122,8 @@ class FlanT5BaseLLM(LLMModel):
     def __init__(self, config):
         super().__init__(config)
         self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
+        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
+                                                                             cache_dir=self.models_dir).to(device)
         self.model.eval()
 
         if not self.tokenizer.pad_token:
@@ -178,6 +179,69 @@ class FlanT5SmallLLM(LLMModel):
         return generated_answer.strip()
 
 
+class FlanT5LargeLLM(LLMModel):
+    model_name = "flan-t5-large"
+    repository = 'google'
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
+        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
+                                                                             cache_dir=self.models_dir).to(device)
+        self.model.eval()
+
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+    def generate_answer(self, prompt):
+        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
+        input_ids = inputs['input_ids'].to(device)
+        attention_mask = inputs['attention_mask'].to(device)
+
+        with torch.no_grad():
+            output = self.model.generate(input_ids,
+                                         attention_mask=attention_mask,
+                                         early_stopping=True,
+                                         max_new_tokens=self.max_output_tokenized_len,
+                                         temperature=self.temperature).cpu()
+
+        generated_answer = self.tokenizer.decode(
+            output[0], skip_special_tokens=True
+        )
+        return generated_answer.strip()
+
+class FlanT5XLLLM(LLMModel):
+    model_name = "flan-t5-xl"
+    repository = 'google'
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
+        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
+                                                                             cache_dir=self.models_dir).to(device)
+        self.model.eval()
+
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+    def generate_answer(self, prompt):
+        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
+        input_ids = inputs['input_ids'].to(device)
+        attention_mask = inputs['attention_mask'].to(device)
+
+        with torch.no_grad():
+            output = self.model.generate(input_ids,
+                                         attention_mask=attention_mask,
+                                         early_stopping=True,
+                                         max_new_tokens=self.max_output_tokenized_len,
+                                         temperature=self.temperature).cpu()
+
+        generated_answer = self.tokenizer.decode(
+            output[0], skip_special_tokens=True
+        )
+        return generated_answer.strip()
+
+
 class GPT35TurboLLM0613(LLMModel):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     if not openai.api_key:
@@ -194,7 +258,7 @@ class GPT35TurboLLM0613(LLMModel):
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
     #  retry for 3 times with a 1-minute wait
-    @retry(stop_max_attempt_number=3, wait_fixed=60*1000)
+    @retry(stop_max_attempt_number=3, wait_fixed=60 * 1000)
     def generate_answer(self, prompt):
         try:
             with timeout(5):  # Set the timeout value for 5 seconds
@@ -214,7 +278,9 @@ AVAILABLE_LLM_MODELS = {
     'gpt2': GPT2LLM,
     'llama-2-7b': Llama2LLM,
     'flan-t5-base': FlanT5BaseLLM,
-    'flan-t5-small': FlanT5SmallLLM
+    'flan-t5-small': FlanT5SmallLLM,
+    'flan-t5-large': FlanT5LargeLLM,
+    'flan-t5-xl': FlanT5XLLLM
 }
 
 
