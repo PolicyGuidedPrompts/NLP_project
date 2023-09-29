@@ -34,3 +34,5 @@ Dataset like Trivia, model chooses to add some context (if some questions can ad
 Dataset like Math answering expect to work best in context
 
 Small model can not take too much context, hence limited with its learning abilities
+
+Some mistakes can be easily explained by the fact that parsing the data is not optimal due to time limitations

@@ -261,7 +261,7 @@ class GPT35TurboLLM0613(LLMModel):
     @retry(stop_max_attempt_number=3, wait_fixed=60 * 1000)
     def generate_answer(self, prompt):
         try:
-            with timeout(5):  # Set the timeout value for 5 seconds
+            with timeout(60):  # Set the timeout value for 5 seconds
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo-0613",
                     messages=[{"role": "user", "content": prompt}],

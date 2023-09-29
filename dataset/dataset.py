@@ -5,6 +5,7 @@ import string
 from abc import ABC, abstractmethod
 from collections import Counter
 import pandas as pd
+import ast
 
 from datasets import load_dataset
 
@@ -21,16 +22,20 @@ class Dataset(ABC):
         logger.info(f"Scoring method: {self.get_scoring_method_name()}")
 
     def score(self, ground_truth, generated_answer):
-        prediction_tokens = self.normalize_answer(generated_answer).split()
-        ground_truth_tokens = self.normalize_answer(ground_truth).split()
-        common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
-        num_same = sum(common.values())
-        if num_same == 0:
-            return 0
-        precision = 1.0 * num_same / len(prediction_tokens)
-        recall = 1.0 * num_same / len(ground_truth_tokens)
-        f1 = (2 * precision * recall) / (precision + recall)
-        return 2 * f1 - 1  # normalize between -1 and 1
+        try:
+            prediction_tokens = self.normalize_answer(generated_answer).split()
+            ground_truth_tokens = self.normalize_answer(ground_truth).split()
+            common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
+            num_same = sum(common.values())
+            if num_same == 0:
+                return 0
+            precision = 1.0 * num_same / len(prediction_tokens)
+            recall = 1.0 * num_same / len(ground_truth_tokens)
+            f1 = (2 * precision * recall) / (precision + recall)
+            return 2 * f1 - 1  # normalize between -1 and 1
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1
 
     def normalize_answer(self, s):
         """Lower text and remove punctuation, articles and extra whitespace."""
@@ -50,8 +55,7 @@ class Dataset(ABC):
 
         return white_space_fix(remove_articles(remove_punc(lower(s))))
 
-    @staticmethod
-    def get_scoring_method_name():
+    def get_scoring_method_name(self):
         return "f1_score"
 
     @property
@@ -59,6 +63,9 @@ class Dataset(ABC):
         if hasattr(self, 'repository'):
             return os.path.join(self.repository, self.dataset_name)
         return self.dataset_name
+
+    def prepare_dataset_to_retriever(self):
+        return self.data['question'].to_numpy()
 
     @abstractmethod
     def load_from_repository(self):
@@ -99,9 +106,6 @@ class StrategyQaDataset(Dataset):
                      f'{current_prompt}'
         return new_prompt
 
-    def prepare_dataset_to_retriever(self):
-        return self.data.apply(lambda item: 'Question: ' + item['question'], axis=1).to_numpy()
-
 
 class SquadDataset(Dataset):
     dataset_name = "squad"
@@ -126,9 +130,6 @@ class SquadDataset(Dataset):
                      f'{current_prompt}'
         return new_prompt
 
-    def prepare_dataset_to_retriever(self):
-        return self.data.apply(lambda item: 'Question: ' + item['question'], axis=1).to_numpy()
-
 
 class OpenTDB(Dataset):
     dataset_name = "open_tdb"
@@ -150,36 +151,49 @@ class OpenTDB(Dataset):
                      f'{current_prompt}'
         return new_prompt
 
-    def prepare_dataset_to_retriever(self):
-        return self.data.apply(lambda item: 'Question: ' + item['question'], axis=1).to_numpy()
-
 
 class AquaRat(Dataset):
     dataset_name = "aqua_rat"
     local_path_to_data_set = "../data/aqua_rat.csv"
 
+    prompt_prefix = "See the questions and answers below and answer the last question in the same fashion." \
+                    "The final answer should begin with: 'The final answer is: A/B/C/D/E'\n"
+
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from local CSV")
         # TODO - remove [:50]
-        return pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[:50]
+        df = pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[1:51]
+        df['options'] = df['options'].apply(lambda x: '\n'.join(ast.literal_eval(x)))
+        return df
 
     def reset(self):
         sample = self.data.sample(1).iloc[0]
-        question, ground_truth = f'Question: {sample["question"]}\n' \
-                                 f'Options: {sample["options"]}\n', sample["answer"]
-        return question, ground_truth
+        question, ground_truth = sample["question"], sample["answer"]
+        initial_prompt = f'Question: {sample["question"]}\n' \
+                         f'{sample["options"]}\n' \
+                         f'Answer: '
+        return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.data.iloc[action]
         new_prompt = f'Question: {sample["question"]}\n' \
-                     f'Options: {sample["options"]}\n' \
-                     f'Rationale: {sample["rationale"]}\n' \
-                     f'Answer: {sample["answer"]}\n' \
+                     f'{sample["options"]}\n' \
+                     f'Answer: {sample["rationale"]}\n' \
+                     f'The final answer is: {sample["answer"]}\n' \
                      f'{current_prompt}'
         return new_prompt
 
-    def prepare_dataset_to_retriever(self):
-        return self.data.apply(lambda item: 'Question: ' + item['question'], axis=1).to_numpy()
+    def extract_final_answer(self, generated_answer):
+        match = re.search(r"The final answer is: ([A-E])", generated_answer)
+        return match.group(1) if match else None
+
+    def score(self, ground_truth, generated_answer):
+        generated_answer = self.extract_final_answer(generated_answer)
+        try:
+            return 1 if generated_answer.lower() == ground_truth.lower() else -1
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1
 
 
 AVAILABLE_DATASETS = {

@@ -48,7 +48,7 @@ class Environment:
         else:
             index_given_action = self.top_k_closest_questions_indices[action-1]
             self.context_prompt = self.dataset.update_prompt(index_given_action, self.context_prompt)
-            done = self.llm.is_prompt_too_long(f'{self.context_prompt}{self.question}')
+            done = self.llm.is_prompt_too_long(f'{self.dataset.prompt_prefix or ""}{self.context_prompt}{self.initial_prompt}')
 
         if done:
             reward, generated_answer = self.evaluate_prompt()
@@ -60,10 +60,9 @@ class Environment:
         return np.concatenate([prompt_encodings, self.question_encodings]), reward, done, generated_answer
 
     def reset(self):
-        self.question, self.ground_truth = self.dataset.reset()
+        self.question, self.initial_prompt, self.ground_truth = self.dataset.reset()
         self.question_encodings = self.retriever.encode(self.question)
         # Adding Answer: to original question
-        self.question = f'{self.question}\nAnswer: '
         self.context_prompt = ''
         self.prompt_encodings = self.retriever.encode(self.context_prompt)
         # Get retriever tok_k for question
@@ -71,8 +70,9 @@ class Environment:
         return np.concatenate([self.prompt_encodings, self.question_encodings])
 
     # TODO - hyper parameters as well as n_layers and heavier models try on slurm
+    # TODO - remove this or ""
     def evaluate_prompt(self):
-        prompt = f'{self.context_prompt}{self.question}'
+        prompt = f'{self.dataset.prompt_prefix or ""}{self.context_prompt}{self.initial_prompt}'
         generated_answer = self.llm.generate_answer(prompt)
         logger.debug(f"\nPrompt:\n{prompt}\n"
                      f"Generated answer:\n{generated_answer}\n"
