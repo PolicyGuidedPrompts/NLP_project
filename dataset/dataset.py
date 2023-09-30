@@ -58,6 +58,7 @@ class Dataset(ABC):
 
         return white_space_fix(remove_articles(remove_punc(lower(s))))
 
+    @staticmethod
     def get_scoring_method_name(self):
         return "f1_score"
 
@@ -120,6 +121,7 @@ class StrategyQaDataset(Dataset):
             logger.error(f"Error in scoring: {e}")
             return -1.0
 
+    @staticmethod
     def get_scoring_method_name(self):
         return "exact-match"
 
@@ -217,6 +219,7 @@ class AquaRat(Dataset):
             logger.error(f"Error in scoring: {e}")
             return -1.0
 
+    @staticmethod
     def get_scoring_method_name(self):
         return "custom exact-match"
 

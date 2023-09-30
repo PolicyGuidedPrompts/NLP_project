@@ -56,7 +56,7 @@ class Environment:
     def evaluate_prompt(self):
         prompt = f'{self.dataset.prompt_prefix}{self.context_prompt}{self.initial_prompt}'
         generated_answer = self.llm.generate_answer(prompt)
-        logger.debug(f"\nPrompt:\n{prompt}\n"
+        logger.info(f"\nPrompt:\n{prompt}\n"
                      f"Generated answer:\n{generated_answer}\n"
                      f"Ground truth:\n{self.ground_truth}\n")
 
