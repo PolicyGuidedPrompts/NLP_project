@@ -53,12 +53,6 @@ class LLMModel:
             return os.path.join(self.repository, self.model_name)
         return self.model_name
 
-    # TODO - think if the following even required:
-    # TODO - implement this for each model (in gpt3.5 should be no-op)
-    @abstractmethod
-    def parse_answer(self, generated_answer):
-        pass
-
 
 class GPT2LLM(LLMModel):
     model_name = "gpt2"
@@ -209,6 +203,7 @@ class FlanT5LargeLLM(LLMModel):
             output[0], skip_special_tokens=True
         )
         return generated_answer.strip()
+
 
 class FlanT5XLLLM(LLMModel):
     model_name = "flan-t5-xl"

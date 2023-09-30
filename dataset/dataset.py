@@ -82,8 +82,6 @@ class Dataset(ABC):
         pass
 
 
-# TODO - prepare dataset in other datasets as well
-# TODO - implement reset + update_prompt for other datasets
 class StrategyQaDataset(Dataset):
     repository = "wics"
     dataset_name = "strategy-qa"

@@ -34,8 +34,7 @@ class PolicyGradient(object):
 
         self.env = env
 
-        # discrete vs continuous action space
-        # TODO - should fix things here for continuous action space
+        # state and action space
         self.observation_dim, self.action_dim = self.env.observation_space, self.env.action_space
         self.lr = self.config.learning_rate
 
@@ -64,8 +63,6 @@ class PolicyGradient(object):
         )
 
         self.policy = CategoricalPolicy(self._network, self.config).to(device)
-
-        # TODO - used to have GaussianPolicy here
 
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
 
@@ -209,7 +206,6 @@ class PolicyGradient(object):
         )
 
     # TODO - save model every x timestamps
-    # TODO - add epoch logic
     def train(self):
         averaged_total_rewards = []
         for t in range(self.config.num_batches):

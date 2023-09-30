@@ -7,6 +7,10 @@ import os
 import io
 import signal
 
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+
 
 def time_it(func):
     @wraps(func)

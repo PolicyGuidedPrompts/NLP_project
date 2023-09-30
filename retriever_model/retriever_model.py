@@ -10,6 +10,8 @@ from utils.network_utils import device, np2torch
 logger = logging.getLogger('root')
 
 
+# TODO - make sure all encoders aligned
+# TODO - make sure all llms aligned
 class RetrieverModel(ABC):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     models_dir = os.path.join(script_dir, "../saved_models/retriever_models")
@@ -64,7 +66,6 @@ class SBertRetriever(RetrieverModel):
                 os.makedirs(self.cache_dir)
             torch.save(self.dataset_embeddings, self.cache_file)
 
-    # TODO now - add encode function
     def encode(self, input):
         encoding = self.model.encode(input, convert_to_tensor=True).detach().cpu().numpy()
         return self._normalize_encoding(encoding)

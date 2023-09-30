@@ -30,7 +30,6 @@ class Config:
         self.eps_clip = namespace.eps_clip
         self.update_freq = namespace.update_freq
 
-        # TODO - when splitting baseline and policy network layers, remember to update output path
         # Policy + Baseline part
         self.policy_instance_norm = namespace.policy_instance_norm
         self.n_layers = namespace.n_layers
@@ -40,7 +39,7 @@ class Config:
         self.num_batches = namespace.num_batches  # number of batches trained on
         self.num_episodes_per_batch = namespace.num_episodes_per_batch  # number of steps used to compute each policy update
         self.gamma = namespace.gamma  # the discount factor
-        self.normalize_advantage = True
+        self.normalize_advantage = namespace.normalize_advantage
 
         # Softmax Temperature Logic
         self.initial_temperature = namespace.initial_temperature

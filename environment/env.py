@@ -1,20 +1,6 @@
 import logging
 import numpy as np
 
-# TODO - Deberta tokenizer and model
-
-# TODO - speak with Nachum about Masters partition slurm
-
-# TODO - punish on long episodes
-
-# TODO
-# Roi suggestion
-# choosing an action will actually choose a random vector
-# will then choose the closest vector to that random vector
-
-# Questions:
-# Ask about budget
-
 logger = logging.getLogger('root')
 
 
@@ -41,14 +27,13 @@ class Environment:
                     f"{self.llm.model_name=}, "
                     f"{self.retriever.model_name=}")
 
-    # TODO - change self.question to prompt
     def step(self, action):
         if action == self.terminate_action:
             done = True
         else:
             index_given_action = self.top_k_closest_questions_indices[action-1]
             self.context_prompt = self.dataset.update_prompt(index_given_action, self.context_prompt)
-            done = self.llm.is_prompt_too_long(f'{self.dataset.prompt_prefix or ""}{self.context_prompt}{self.initial_prompt}')
+            done = self.llm.is_prompt_too_long(f'{self.dataset.prompt_prefix}{self.context_prompt}{self.initial_prompt}')
 
         if done:
             reward, generated_answer = self.evaluate_prompt()
@@ -69,10 +54,8 @@ class Environment:
         self.top_k_closest_questions_indices = self.retriever.retrieve(self.question_encodings)
         return np.concatenate([self.prompt_encodings, self.question_encodings])
 
-    # TODO - hyper parameters as well as n_layers and heavier models try on slurm
-    # TODO - remove this or ""
     def evaluate_prompt(self):
-        prompt = f'{self.dataset.prompt_prefix or ""}{self.context_prompt}{self.initial_prompt}'
+        prompt = f'{self.dataset.prompt_prefix}{self.context_prompt}{self.initial_prompt}'
         generated_answer = self.llm.generate_answer(prompt)
         logger.debug(f"\nPrompt:\n{prompt}\n"
                      f"Generated answer:\n{generated_answer}\n"

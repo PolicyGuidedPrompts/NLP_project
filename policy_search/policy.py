@@ -7,7 +7,6 @@ from utils.network_utils import np2torch
 
 class BasePolicy:
     def action_distribution(self, observations, current_batch):
-        # TODO - add current_batch to docstring
         """
         Args:
             observations: torch.Tensor of shape [batch size, dim(observation space)]
@@ -43,7 +42,6 @@ class BasePolicy:
         return sampled_action.detach().cpu().numpy(), log_probs
 
 
-# TODO - think if this CategoricalPolicy is even required
 class CategoricalPolicy(BasePolicy, nn.Module):
     def __init__(self, network, config):
         nn.Module.__init__(self)
@@ -87,35 +85,3 @@ class CategoricalPolicy(BasePolicy, nn.Module):
             return float('inf')
         else:
             return self.config.end_temperature
-
-
-# TODO - maybe remove this policy
-class GaussianPolicy(BasePolicy, nn.Module):
-    def __init__(self, network, action_dim):
-        nn.Module.__init__(self)
-        self.network = network
-        self.log_std = torch.nn.Parameter(torch.zeros(action_dim))
-
-    def std(self):
-        """
-        Returns:
-            std: torch.Tensor of shape [dim(action space)]
-        """
-        std = torch.exp(self.log_std)
-        return std
-
-    def action_distribution(self, observations, current_batch):
-        """
-        Args:
-            observations: torch.Tensor of shape [batch size, dim(observation space)]
-        Returns:
-            distribution: an instance of a subclass of
-                torch.distributions.Distribution representing a diagonal
-                Gaussian distribution whose mean (loc) is computed by
-                self.network and standard deviation (scale) is self.std()
-        """
-        mean = self.network(observations)
-        std = self.std()
-        covariance_matrix = torch.diag(torch.square(std))
-        distribution = torch.distributions.MultivariateNormal(mean, covariance_matrix)
-        return distribution
