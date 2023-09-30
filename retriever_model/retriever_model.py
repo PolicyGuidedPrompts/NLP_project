@@ -46,6 +46,7 @@ class SBertRetriever(RetrieverModel):
     repository = "sentence-transformers"
 
     def __init__(self, config, dataset):
+        assert config.retriever_top_k, "retriever_top_k is required when using sbert model"
         super().__init__(self.model_name, config)
         self.model = SentenceTransformer(self.model_path, cache_folder=self.models_dir).to(device)
         dataset_to_retriever = dataset.prepare_dataset_to_retriever()

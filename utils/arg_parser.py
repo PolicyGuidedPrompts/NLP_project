@@ -24,7 +24,6 @@ parser.add_argument("--run_name", type=str, default=None)
 parser.add_argument("--dataset", type=str, required=True, choices=ALLOWED_DATASETS)
 # Retriever
 parser.add_argument("--retriever_model", type=str, required=True, choices=ALLOWED_RETRIEVERS)
-parser.add_argument("--retriever_top_k", type=int)
 # Algorithm
 parser.add_argument("--algorithm", type=str, required=True, choices=ALLOWED_ALGORITHMS)
 # LLM
@@ -35,6 +34,7 @@ parser.add_argument("--llm_max_output_tokenized_len", type=int, required=True)
 # Defaults
 # Retriever
 parser.add_argument("--normalize_encoding_method", type=str, default='', choices=ALLOWED_NORMALIZE_ENCODING_METHODS)
+parser.add_argument("--retriever_top_k", type=int)
 # LLM
 parser.add_argument("--llm_temperature", type=float, default=0.7)
 # Policy
