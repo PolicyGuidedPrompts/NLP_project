@@ -42,3 +42,7 @@ Tried custom dataset open tdb, dataset is not good enough, missing context
 Tried math deepmind dataset not good enough because there is not solution, only final answer, no gradients to learn from
 
 Too easy dataset like squad/strategy-qa which the question itself contain the answer (reading comprehension) results in choosing action 0
+
+PG is better than PPO in our scenario
+
+Only questions enter retriever

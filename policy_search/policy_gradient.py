@@ -235,6 +235,7 @@ class PolicyGradient(object):
                 wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
 
     # TODO - fix add logic
+    # TODO - remember not to remove the closest example in dataset
     def evaluate(self, env=None, num_episodes_per_batch=1):
         pass
         # if env == None:
