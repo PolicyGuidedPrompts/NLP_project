@@ -20,8 +20,6 @@ class Dataset(ABC):
     prompt_prefix = "See the questions and answers below and answer the last question in the same fashion.\n"
 
     def __init__(self):
-        self.dataset_name = None
-
         self.data = self.load_from_repository()
         logger.info(f"Scoring method: {self.get_scoring_method_name()}")
 

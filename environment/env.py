@@ -6,14 +6,6 @@ logger = logging.getLogger('root')
 
 class Environment:
     def __init__(self, dataset, llm, retriever, seed, terminate_action=0):
-        self.context_prompt = None
-        self.question = None
-        self.top_k_closest_questions_indices = None
-        self.prompt_encodings = None
-        self.question_encodings = None
-        self.ground_truth = None
-        self.initial_prompt = None
-
         super(Environment, self).__init__()
         self.dataset = dataset
         self.retriever = retriever

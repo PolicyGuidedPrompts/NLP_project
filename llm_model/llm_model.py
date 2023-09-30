@@ -18,10 +18,6 @@ class LLMModel:
     models_dir = os.path.join(script_dir, "../saved_models/llm_models")
 
     def __init__(self, config):
-        self.model_name = None
-        self.model = None
-        self.tokenizer = None
-
         self.max_prompt_tokenized_len = config.llm_max_prompt_tokenized_len
         self.max_output_tokenized_len = config.llm_max_output_tokenized_len
         self.temperature = config.llm_temperature

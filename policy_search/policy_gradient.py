@@ -24,10 +24,6 @@ class PolicyGradient(object):
     """
 
     def __init__(self, env, config):
-        self.optimizer = None
-        self.policy = None
-        self._network = None
-
         if not os.path.exists(config.output_path):
             os.makedirs(config.output_path)
 
