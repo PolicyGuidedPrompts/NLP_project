@@ -15,9 +15,10 @@ class RetrieverModel(ABC):
     models_dir = os.path.join(script_dir, "../saved_models/retriever_models")
 
     def __init__(self, model_name, config):
+        self.dataset = None
+
         self.model_name = model_name
         self.config = config
-        self.dataset = None
         logger.info(f"Loading retriever model {self.model_name=}")
 
     def retrieve(self, _encoding):
