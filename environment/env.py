@@ -13,7 +13,8 @@ class Environment:
         self.terminate_action = terminate_action
 
         # +1 for terminate action
-        self.action_space = self.retriever.top_k + 1 if hasattr(self.retriever, 'top_k') else len(dataset.data) + 1
+        self.action_space = self.retriever.top_k + 1 if hasattr(self.retriever, 'top_k') else len(
+            dataset.train_data) + 1
 
         # Define observation space based on a sample observation
         # Half for generated prompt and half for storing the original question encodings
@@ -31,7 +32,7 @@ class Environment:
         if action == self.terminate_action:
             done = True
         else:
-            index_given_action = self.top_k_closest_questions_indices[action-1]
+            index_given_action = self.top_k_closest_questions_indices[action - 1]
             self.context_prompt = self.dataset.update_prompt(index_given_action, self.context_prompt)
             done = self.llm.is_prompt_too_long(f'{self.dataset.prompt_prefix}{self.context_prompt}'
                                                f'{self.initial_prompt}')
@@ -45,20 +46,20 @@ class Environment:
         prompt_encodings = self.retriever.encode(self.context_prompt)
         return np.concatenate([prompt_encodings, self.question_encodings]), reward, done, generated_answer
 
-    def reset(self):
-        self.question, self.initial_prompt, self.ground_truth = self.dataset.reset()
+    def reset(self, mode='train', index=None):
+        self.question, self.initial_prompt, self.ground_truth = self.dataset.reset(mode=mode, index=index)
         self.question_encodings = self.retriever.encode(self.question)
         self.context_prompt = ''
         self.prompt_encodings = self.retriever.encode(self.context_prompt)
-        self.top_k_closest_questions_indices = self.retriever.retrieve(self.question_encodings)
+        self.top_k_closest_questions_indices = self.retriever.retrieve(encoding=self.question_encodings, mode=mode)
         return np.concatenate([self.prompt_encodings, self.question_encodings])
 
     def evaluate_prompt(self):
         prompt = f'{self.dataset.prompt_prefix}{self.context_prompt}{self.initial_prompt}'
         generated_answer = self.llm.generate_answer(prompt)
         logger.info(f"\nPrompt:\n{prompt}\n"
-                     f"Generated answer:\n{generated_answer}\n"
-                     f"Ground truth:\n{self.ground_truth}\n")
+                    f"Generated answer:\n{generated_answer}\n"
+                    f"Ground truth:\n{self.ground_truth}\n")
 
         reward = self.dataset.score(self.ground_truth, generated_answer)
 

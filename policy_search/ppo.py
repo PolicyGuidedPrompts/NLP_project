@@ -63,7 +63,6 @@ class PPO(PolicyGradient):
         return observations, actions, returns, advantages, batch_rewards, old_logprobs
 
     def train(self):
-        averaged_total_rewards = []
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes(current_batch=t)
             observations, actions, returns, advantages, batch_rewards, old_logprobs = self.merge_episodes_to_batch(
@@ -78,11 +77,14 @@ class PPO(PolicyGradient):
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
                 t+1, avg_batch_reward, std_batch_reward
             )
-            averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
 
             if self.config.run_name:
                 wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
+
+            # test logic
+            if t % self.config.test_every == 0:
+                self.evaluate()
 
     def sample_episode(self, current_batch):
         observation = self.env.reset()

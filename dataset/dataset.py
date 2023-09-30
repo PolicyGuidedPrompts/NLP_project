@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 import pandas as pd
 import ast
-
+from sklearn.model_selection import train_test_split
 from datasets import load_dataset
 
 logger = logging.getLogger('root')
@@ -20,7 +20,7 @@ class Dataset(ABC):
     prompt_prefix = "See the questions and answers below and answer the last question in the same fashion.\n"
 
     def __init__(self):
-        self.data = self.load_from_repository()
+        self.train_data, self.test_data = self.load_from_repository()
         logger.info(f"Scoring method: {self.get_scoring_method_name()}")
 
     def score(self, ground_truth, generated_answer):
@@ -59,7 +59,7 @@ class Dataset(ABC):
         return white_space_fix(remove_articles(remove_punc(lower(s))))
 
     @staticmethod
-    def get_scoring_method_name(self):
+    def get_scoring_method_name():
         return "f1_score"
 
     @property
@@ -69,14 +69,14 @@ class Dataset(ABC):
         return self.dataset_name
 
     def prepare_dataset_to_retriever(self):
-        return self.data['question'].to_numpy()
+        return self.train_data['question'].to_numpy()
 
     @abstractmethod
     def load_from_repository(self):
         pass
 
     @abstractmethod
-    def reset(self):
+    def reset(self, mode, index):
         pass
 
     @abstractmethod
@@ -96,10 +96,15 @@ class StrategyQaDataset(Dataset):
         df = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["test"].to_pandas()[
             ["question", "answer", "facts"]].assign(answer=lambda x: x['answer'].astype(str))
         df['facts'] = df['facts'].astype(str).apply(lambda x: ''.join(ast.literal_eval(x)))
-        return df
 
-    def reset(self):
-        sample = self.data.sample(1).iloc[0]
+        df_train, df_test = train_test_split(df, test_size=0.2, random_state=42)
+        return df_train, df_test
+
+    def reset(self, mode, index):
+        if mode == 'train':
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
         question, ground_truth = sample["question"], sample["answer"]
         initial_prompt = f'Question: {sample["question"]}\n' \
                          f'Facts: {sample["facts"]}\n' \
@@ -107,7 +112,7 @@ class StrategyQaDataset(Dataset):
         return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
-        sample = self.data.iloc[action]
+        sample = self.train_data.iloc[action]
         new_prompt = f'Question: {sample["question"]}\n' \
                      f'Facts: {sample["facts"]}\n' \
                      f'Answer: {sample["answer"]}\n' \
@@ -122,21 +127,29 @@ class StrategyQaDataset(Dataset):
             return -1.0
 
     @staticmethod
-    def get_scoring_method_name(self):
+    def get_scoring_method_name():
         return "exact-match"
 
 
 class SquadDataset(Dataset):
     dataset_name = "squad"
 
+    # TODO - should fix logic here, more specifically the scoring method
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()
-        data['answer'] = data['answers'].apply(lambda x: x['text'][0] if x else None)
-        return data[["question", "answer", "context"]]
+        df_train = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()
+        df_train['answer'] = df_train['answers'].apply(lambda x: x['text'][0] if x else None)
 
-    def reset(self):
-        sample = self.data.sample(1).iloc[0]
+        df_test = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["validation"].to_pandas()
+        df_test['answer'] = df_test['answers'].apply(lambda x: x['text'][0] if x else None)
+
+        return df_train[["question", "answer", "context"]], df_test[["question", "answer", "context"]]
+
+    def reset(self, mode, index):
+        if mode == 'train':
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
         question, ground_truth = sample["question"], sample["answer"]
         initial_prompt = f'Question: {sample["question"]}\n' \
                          f'Context: {sample["context"]}\n' \
@@ -144,7 +157,7 @@ class SquadDataset(Dataset):
         return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
-        sample = self.data.iloc[action]
+        sample = self.train_data.iloc[action]
         new_prompt = f'Question: {sample["question"]}\n' \
                      f'Context: {sample["context"]}\n' \
                      f'Answer: {sample["answer"]}\n' \
@@ -158,17 +171,22 @@ class OpenTDB(Dataset):
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from local CSV")
-        return pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[:50]
+        data = pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[:50]
+        df_train, df_test = train_test_split(data, test_size=0.2, random_state=42)
+        return df_train, df_test
 
-    def reset(self):
-        sample = self.data.sample(1).iloc[0]
+    def reset(self, mode, index):
+        if mode == 'train':
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
         question, ground_truth = sample["question"], sample["answer"]
         initial_prompt = f'Question: {sample["question"]}\n' \
                          f'Answer: '
         return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
-        sample = self.data.iloc[action]
+        sample = self.train_data.iloc[action]
         new_prompt = f'Question: {sample["question"]}\n' \
                      f'Answer: {sample["answer"]}\n' \
                      f'{current_prompt}'
@@ -182,15 +200,19 @@ class AquaRat(Dataset):
     prompt_prefix = "See the questions and answers below and answer the last question in the same fashion." \
                     "The final answer should begin with: 'The final answer is: A/B/C/D/E'\n"
 
+    # TODO - remove [:50]
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from local CSV")
-        # TODO - remove [:50]
         df = pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[1:51]
         df['options'] = df['options'].apply(lambda x: '\n'.join(ast.literal_eval(x)))
-        return df
+        df_train, df_test = train_test_split(df, test_size=0.2, random_state=42)
+        return df_train, df_test
 
-    def reset(self):
-        sample = self.data.sample(1).iloc[0]
+    def reset(self, mode, index):
+        if mode == 'train':
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
         question, ground_truth = sample["question"], sample["answer"]
         initial_prompt = f'Question: {sample["question"]}\n' \
                          f'{sample["options"]}\n' \
@@ -198,7 +220,7 @@ class AquaRat(Dataset):
         return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
-        sample = self.data.iloc[action]
+        sample = self.train_data.iloc[action]
         new_prompt = f'Question: {sample["question"]}\n' \
                      f'{sample["options"]}\n' \
                      f'Answer: {sample["rationale"]}\n' \
@@ -220,7 +242,7 @@ class AquaRat(Dataset):
             return -1.0
 
     @staticmethod
-    def get_scoring_method_name(self):
+    def get_scoring_method_name():
         return "custom exact-match"
 
 

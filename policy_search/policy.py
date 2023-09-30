@@ -41,6 +41,22 @@ class BasePolicy:
 
         return sampled_action.detach().cpu().numpy(), log_probs
 
+    def test_act(self, observation):
+        """
+        Args:
+            observation: np array of shape (1, dim(observation space))
+        Returns:
+            sampled_action: np array of shape (1, *shape of action)
+        """
+        observation = np2torch(observation)
+
+        logits = self.network(observation)
+        action_distribution = torch.distributions.Categorical(logits=logits)
+
+        sampled_action = action_distribution.sample()
+
+        return sampled_action.detach().cpu().numpy()
+
 
 class CategoricalPolicy(BasePolicy, nn.Module):
     def __init__(self, network, config):

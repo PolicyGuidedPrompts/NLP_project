@@ -8,6 +8,7 @@ class Config:
 
         # General part
         self.seed = namespace.seed
+        self.test_every = namespace.test_every
 
         # Dataset part
         self.dataset = namespace.dataset

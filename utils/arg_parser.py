@@ -57,5 +57,6 @@ parser.add_argument("--exploration_decay_factor", type=float, default=0.995)
 # Global
 parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--num_batches", type=int, default=1)  # number of batches trained on
+parser.add_argument("--test_every", type=int, default=50)  # number of batches trained on
 # number of steps used to compute each policy update
 parser.add_argument("--num_episodes_per_batch", type=int, default=10)

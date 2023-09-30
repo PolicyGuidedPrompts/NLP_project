@@ -75,6 +75,19 @@ class PolicyGradient(object):
 
         return episode
 
+    def sample_test_episode(self, index):
+        observation = self.env.reset(mode='test', index=index)
+        episode = Episode()
+        done = False
+
+        while not done:
+            action, _ = self.policy.test_act(observation.reshape(1, -1))
+            next_observation, reward, done, _ = self.env.step(action.item())
+            episode.add(observation, action.item(), reward)
+            observation = next_observation
+
+        return episode
+
     def sample_episodes(self, current_batch):
         episodes = []
 
@@ -195,7 +208,6 @@ class PolicyGradient(object):
 
     # TODO - save model every x timestamps
     def train(self):
-        averaged_total_rewards = []
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes(current_batch=t)
             observations, actions, returns, advantages, batch_rewards = self.merge_episodes_to_batch(episodes)
@@ -210,24 +222,31 @@ class PolicyGradient(object):
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
                 t + 1, avg_batch_reward, std_batch_reward
             )
-            averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
 
             if self.config.run_name:
                 wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
 
-    # TODO - fix logic
-    # TODO - remember not to remove the closest example in dataset
-    def evaluate(self, env=None, num_episodes_per_batch=1):
-        pass
-        # if env == None:
-        #     env = self.env
-        # paths, rewards = self.sample_paths(env, num_episodes_per_batch)
-        # avg_reward = np.mean(rewards)
-        # sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
-        # msg = "Average reward: {:04.2f} +/- {:04.2f}".format(avg_reward, sigma_reward)
-        # self.logger.info(msg)
-        # return avg_reward
+            # test logic
+            if t % self.config.test_every == 0:
+                self.evaluate()
+
+    def evaluate(self):
+        with torch.no_grad():
+            test_rewards = []
+            for index, sample in enumerate(self.env.dataset.test_data):
+                episode = self.sample_test_episode(index=index)
+                test_rewards.append(episode.total_reward)
+
+            test_rewards_np = np.array(test_rewards)
+            avg_test_reward = test_rewards_np.mean()
+            std_test_reward = test_rewards_np.std()
+
+            msg = "Average reward: {:04.2f} +/- {:04.2f}".format(avg_test_reward, std_test_reward)
+            logger.info(msg)
+
+            if self.config.run_name:
+                wandb.log({"avg_test_reward": avg_test_reward, "std_test_reward": std_test_reward})
 
     @contextlib.contextmanager
     def wandb_context(self):

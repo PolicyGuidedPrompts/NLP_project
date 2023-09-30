@@ -19,8 +19,8 @@ class RetrieverModel(ABC):
         self.config = config
         logger.info(f"Loading retriever model {self.model_name=}")
 
-    def retrieve(self, _encoding):
-        return np.array(range(len(self.dataset.data)))
+    def retrieve(self, _encoding, _mode):
+        return np.array(range(len(self.dataset.train_data)))
 
     def _normalize_encoding(self, encoding):
         if self.config.normalize_encoding_method == 'l2':
@@ -67,15 +67,20 @@ class SBertRetriever(RetrieverModel):
         encoding = self.model.encode(encoder_input, convert_to_tensor=True).detach().cpu().numpy()
         return self._normalize_encoding(encoding)
 
-    def retrieve(self, encoding):
+    def retrieve(self, encoding, mode):
         encoding_tensor = util.normalize_embeddings(np2torch(encoding.reshape(1, -1)))
         corpus_embeddings_tensor = util.normalize_embeddings(np2torch(self.dataset_embeddings))
 
-        hits = util.semantic_search(query_embeddings=encoding_tensor, corpus_embeddings=corpus_embeddings_tensor,
-                                    score_function=util.dot_score, top_k=self.top_k + 1)
+        if mode == 'train':
+            hits = util.semantic_search(query_embeddings=encoding_tensor, corpus_embeddings=corpus_embeddings_tensor,
+                                        score_function=util.dot_score, top_k=self.top_k + 1)
+            # remove first hit which is the question itself
+            return np.array([hit['corpus_id'] for hit in hits[0][1:]])
 
-        # remove first hit which is the question itself
-        return np.array([hit['corpus_id'] for hit in hits[0][1:]])
+        # in test there is no need to remove first hit since it won't be the question itself
+        hits = util.semantic_search(query_embeddings=encoding_tensor, corpus_embeddings=corpus_embeddings_tensor,
+                                    score_function=util.dot_score, top_k=self.top_k)
+        return np.array([hit['corpus_id'] for hit in hits[0]])
 
 
 class Encoder(RetrieverModel):
