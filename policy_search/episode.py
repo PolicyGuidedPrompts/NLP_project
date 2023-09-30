@@ -3,7 +3,7 @@ class Episode:
         self.observations = []
         self.actions = []
         self.rewards = []
-        self.total_reward = 0
+        self.total_reward = 0.0
 
     def add(self, observation, action, reward):
         self.observations.append(observation)

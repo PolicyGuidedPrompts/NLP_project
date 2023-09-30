@@ -36,3 +36,9 @@ Dataset like Math answering expect to work best in context
 Small model can not take too much context, hence limited with its learning abilities
 
 Some mistakes can be easily explained by the fact that parsing the data is not optimal due to time limitations
+
+Tried custom dataset open tdb, dataset is not good enough, missing context
+
+Tried math deepmind dataset not good enough because there is not solution, only final answer, no gradients to learn from
+
+Too easy dataset like squad/strategy-qa which the question itself contain the answer (reading comprehension) results in choosing action 0

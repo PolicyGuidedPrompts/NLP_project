@@ -49,7 +49,7 @@ class CategoricalPolicy(BasePolicy, nn.Module):
         nn.Module.__init__(self)
         self.config = config
         self.network = network
-        self.epsilon = 1
+        self.epsilon = 1.0
 
     def action_distribution(self, observations, current_batch):
         """
@@ -75,7 +75,7 @@ class CategoricalPolicy(BasePolicy, nn.Module):
             raise NotImplementedError
 
     def _get_exp_softmax_temperature(self, current_batch):
-        return self.config.initial_temperature * (self.config.exploration_decay_factor ** current_batch) + 1
+        return self.config.initial_temperature * (self.config.exploration_decay_factor ** current_batch) + 1.0
 
     def _get_linear_softmax_temperature(self, current_batch):
         return self.config.initial_temperature + (self.config.end_temperature - self.config.initial_temperature) * (

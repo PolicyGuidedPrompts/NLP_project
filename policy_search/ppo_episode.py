@@ -4,7 +4,7 @@ class PPOEpisode:
         self.actions = []
         self.rewards = []
         self.old_logprobs = []
-        self.total_reward = 0
+        self.total_reward = 0.0
 
     def add(self, observation, action, reward, old_logprob):
         self.observations.append(observation)

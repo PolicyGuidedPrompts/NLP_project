@@ -17,6 +17,8 @@ class Dataset(ABC):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     datasets_dir = os.path.join(script_dir, "../saved_datasets")
 
+    prompt_prefix = "See the questions and answers below and answer the last question in the same fashion.\n"
+
     def __init__(self):
         self.data = self.load_from_repository()
         logger.info(f"Scoring method: {self.get_scoring_method_name()}")
@@ -28,14 +30,14 @@ class Dataset(ABC):
             common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
             num_same = sum(common.values())
             if num_same == 0:
-                return 0
+                return 0.0
             precision = 1.0 * num_same / len(prediction_tokens)
             recall = 1.0 * num_same / len(ground_truth_tokens)
-            f1 = (2 * precision * recall) / (precision + recall)
-            return 2 * f1 - 1  # normalize between -1 and 1
+            f1 = (2.0 * precision * recall) / (precision + recall)
+            return 2.0 * f1 - 1.0  # normalize between -1 and 1
         except Exception as e:
             logger.error(f"Error in scoring: {e}")
-            return -1
+            return -1.0
 
     def normalize_answer(self, s):
         """Lower text and remove punctuation, articles and extra whitespace."""
@@ -86,17 +88,22 @@ class StrategyQaDataset(Dataset):
     repository = "wics"
     dataset_name = "strategy-qa"
 
+    prompt_prefix = "See the questions and answers below and answer the last question in the same fashion base on the facts.\n"
+
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from {self.repository}")
-        return load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["test"].to_pandas()[
-            ["question", "answer", "facts", "decomposition"]].assign(
-            answer=lambda x: x['answer'].astype(str))
+        df = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["test"].to_pandas()[
+            ["question", "answer", "facts"]].assign(answer=lambda x: x['answer'].astype(str))
+        df['facts'] = df['facts'].astype(str).apply(lambda x: ''.join(ast.literal_eval(x)))
+        return df
 
     def reset(self):
         sample = self.data.sample(1).iloc[0]
-        question, ground_truth = f'Question: {sample["question"]}\n' \
-                                 f'Facts: {sample["facts"]}', sample["answer"]
-        return question, ground_truth
+        question, ground_truth = sample["question"], sample["answer"]
+        initial_prompt = f'Question: {sample["question"]}\n' \
+                         f'Facts: {sample["facts"]}\n' \
+                         f'Answer: '
+        return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.data.iloc[action]
@@ -105,6 +112,16 @@ class StrategyQaDataset(Dataset):
                      f'Answer: {sample["answer"]}\n' \
                      f'{current_prompt}'
         return new_prompt
+
+    def score(self, ground_truth, generated_answer):
+        try:
+            return 1.0 if generated_answer.lower() == ground_truth.lower() else -1.0
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1.0
+
+    def get_scoring_method_name(self):
+        return "exact-match"
 
 
 class SquadDataset(Dataset):
@@ -118,9 +135,11 @@ class SquadDataset(Dataset):
 
     def reset(self):
         sample = self.data.sample(1).iloc[0]
-        question, ground_truth = f'Question: {sample["question"]}\n' \
-                                 f'Context: {sample["context"]}', sample["answer"]
-        return question, ground_truth
+        question, ground_truth = sample["question"], sample["answer"]
+        initial_prompt = f'Question: {sample["question"]}\n' \
+                         f'Context: {sample["context"]}\n' \
+                         f'Answer: '
+        return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.data.iloc[action]
@@ -137,12 +156,14 @@ class OpenTDB(Dataset):
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from local CSV")
-        return pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))
+        return pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[:50]
 
     def reset(self):
         sample = self.data.sample(1).iloc[0]
-        question, ground_truth = f'Question: {sample["question"]}', sample["answer"]
-        return question, ground_truth
+        question, ground_truth = sample["question"], sample["answer"]
+        initial_prompt = f'Question: {sample["question"]}\n' \
+                         f'Answer: '
+        return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.data.iloc[action]
@@ -190,10 +211,13 @@ class AquaRat(Dataset):
     def score(self, ground_truth, generated_answer):
         generated_answer = self.extract_final_answer(generated_answer)
         try:
-            return 1 if generated_answer.lower() == ground_truth.lower() else -1
+            return 1.0 if generated_answer.lower() == ground_truth.lower() else -1.0
         except Exception as e:
             logger.error(f"Error in scoring: {e}")
-            return -1
+            return -1.0
+
+    def get_scoring_method_name(self):
+        return "custom exact-match"
 
 
 AVAILABLE_DATASETS = {

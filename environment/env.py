@@ -53,7 +53,7 @@ class Environment:
         if done:
             reward, generated_answer = self.evaluate_prompt()
         else:
-            reward = 0
+            reward = 0.0
             generated_answer = None
 
         prompt_encodings = self.retriever.encode(self.context_prompt)

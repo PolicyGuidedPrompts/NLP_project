@@ -108,7 +108,7 @@ class PolicyGradient(object):
         all_returns = []
         for episode in episodes:
             rewards = episode.rewards
-            returns = np.zeros_like(rewards)
+            returns = np.zeros_like(rewards, dtype=np.float64)
 
             G_t = 0
             for t in reversed(range(len(rewards))):
@@ -225,7 +225,7 @@ class PolicyGradient(object):
             avg_batch_reward = batch_rewards.mean()
             std_batch_reward = batch_rewards.std()
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
-                t+1, avg_batch_reward, std_batch_reward
+                t + 1, avg_batch_reward, std_batch_reward
             )
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
