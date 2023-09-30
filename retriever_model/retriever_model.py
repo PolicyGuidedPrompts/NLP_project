@@ -79,53 +79,41 @@ class SBertRetriever(RetrieverModel):
         return np.array([hit['corpus_id'] for hit in hits[0][1:]])
 
 
-class BertEncoder(RetrieverModel):
-    model_name = "bert-base-uncased"
-
+class Encoder(RetrieverModel):
     def __init__(self, config, dataset):
-        assert not config.retriever_top_k, "BertEncoder does not support retriever_top_k"
+        assert not config.retriever_top_k, f"{self.model_name} encoder does not support retriever_top_k"
         super().__init__(self.model_name, config)
         self.dataset = dataset
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
         self.model = AutoModel.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
 
-    def encode(self, encoder_input):
-        inputs = self.tokenizer(encoder_input, return_tensors="pt", truncation=True, padding=True).to(device)
+
+class BertEncoder(Encoder):
+    model_name = "bert-base-uncased"
+
+    def encode(self, text):
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
         encoding = outputs.last_hidden_state[0, 0, :].detach().cpu().numpy()
         return self._normalize_encoding(encoding)
 
 
-class BgeLargeEnEncoder(RetrieverModel):
+class BgeLargeEnEncoder(Encoder):
     repository = "BAAI"
     model_name = "bge-large-en"
-
-    def __init__(self, config, dataset):
-        super().__init__(self.model_name, config)
-        self.dataset = dataset
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = AutoModel.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
 
     def encode(self, text):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        sentence_embeddings = outputs.last_hidden_state[:, 0]
-        sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
-        encoding = sentence_embeddings.squeeze().detach().cpu().numpy()
+        encoding = outputs.last_hidden_state[0, 0, :].detach().cpu().numpy()
         return self._normalize_encoding(encoding)
 
 
-class GteLargeEncoder(RetrieverModel):
+class GteLargeEncoder(Encoder):
     repository = "thenlper"
     model_name = "gte-large"
-
-    def __init__(self, config, dataset):
-        super().__init__(self.model_name, config)
-        self.dataset = dataset
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = AutoModel.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
 
     def encode(self, text):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512).to(device)
@@ -140,8 +128,8 @@ class GteLargeEncoder(RetrieverModel):
 AVAILABLE_RETRIEVERS = {
     'sbert': SBertRetriever,
     'bert-no-op-retriever': BertEncoder,
-    'bge-large-en-no-op-retriever': BgeLargeEnEncoder,
-    'gte-large-no-op-retriever': GteLargeEncoder
+    'bge-no-op-retriever': BgeLargeEnEncoder,
+    'gte-no-op-retriever': GteLargeEncoder
 }
 
 

@@ -7,7 +7,7 @@ from retriever_model.retriever_model import AVAILABLE_RETRIEVERS
 ALLOWED_DATASETS = AVAILABLE_DATASETS.keys()  # 'strategy-qa','squad','open-tdb', 'aqua_rat'
 # 'gpt2','gpt3.5','llama-2-7b','flan-t5-base','flan-t5-small', 'flan-t5-large', 'flan-t5-xl'
 ALLOWED_LLMS = AVAILABLE_LLM_MODELS.keys()
-# 'sbert', 'bert-no-op-retriever', 'bge-large-en-no-op-retriever', 'gte-large-no-op-retriever'
+# 'sbert', 'bert-no-op-retriever', 'bge-no-op-retriever', 'gte-no-op-retriever'
 ALLOWED_RETRIEVERS = AVAILABLE_RETRIEVERS.keys()
 ALLOWED_ALGORITHMS = ['pg', 'ppo']
 ALLOWED_NORMALIZE_ENCODING_METHODS = ['l2', 'instance']  # can leave empty for no normalization
