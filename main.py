@@ -3,7 +3,7 @@ import random
 import numpy as np
 import torch
 
-from arg_parser import parser
+from utils.arg_parser import parser
 from config import get_config
 from dataset.dataset import DatasetFactory
 from environment.env import Environment

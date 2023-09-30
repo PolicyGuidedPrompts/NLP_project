@@ -63,14 +63,14 @@ class Config:
                       f"{baseline_str}"
         second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}" \
                        f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}" \
-                       f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}" \
-                       f"_n_layers={self.n_layers}_learning_rate={self.learning_rate}" \
-                       f"_num_batches={self.num_batches}_num_episodes_per_batch={self.num_episodes_per_batch}" \
-                       f"_gamma={self.gamma}_initial_temperature={self.initial_temperature}" \
-                       f"_end_temperature={self.end_temperature}" \
-                       f"_exploration_decay_factor={self.exploration_decay_factor}"
+                       f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}"
+        third_level = f"n_layers={self.n_layers}_learning_rate={self.learning_rate}" \
+                      f"_num_batches={self.num_batches}_num_episodes_per_batch={self.num_episodes_per_batch}" \
+                      f"_gamma={self.gamma}_initial_temperature={self.initial_temperature}" \
+                      f"_end_temperature={self.end_temperature}" \
+                      f"_exploration_decay_factor={self.exploration_decay_factor}"
 
-        rel_output_path = os.path.join("results", first_level, second_level)
+        rel_output_path = os.path.join("results", first_level, second_level, third_level)
         self.output_path = os.path.join(self.BASE_DIR, rel_output_path)
 
         self.model_output = os.path.join(self.output_path, "model.weights")
