@@ -25,8 +25,8 @@ def time_it(func):
 
 
 def get_logger(log_path):
-    # Ensure the directory exists
     log_dir = os.path.dirname(log_path)
+
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 

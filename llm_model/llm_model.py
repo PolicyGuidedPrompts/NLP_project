@@ -76,7 +76,7 @@ class GPT35TurboLLM0613(LLMModel):
     @retry(stop_max_attempt_number=3, wait_fixed=60 * 1000)
     def generate_answer(self, prompt):
         try:
-            with timeout(60):  # Set the timeout value for 60 seconds
+            with timeout(60):  # seconds
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo-0613",
                     messages=[{"role": "user", "content": prompt}],
@@ -156,7 +156,6 @@ class Llama2LLM(LLMModel):
             self.model_path,
             trust_remote_code=True,
             config=self.model_config,
-            # quantization_config=self.bnb_config,
             device_map='auto',
             use_auth_token=self.hf_auth,
             cache_dir=self.models_dir

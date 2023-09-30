@@ -59,7 +59,7 @@ class SBertRetriever(RetrieverModel):
             self.dataset_embeddings = torch.load(self.cache_file)
         else:
             self.dataset_embeddings = self.model.encode(dataset_to_retriever)
-            # Ensure cache directory exists
+
             if not os.path.exists(self.cache_dir):
                 os.makedirs(self.cache_dir)
             torch.save(self.dataset_embeddings, self.cache_file)

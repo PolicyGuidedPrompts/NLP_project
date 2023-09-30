@@ -24,16 +24,13 @@ class PolicyGradient(object):
     """
 
     def __init__(self, env, config):
-        # directory for training outputs
         if not os.path.exists(config.output_path):
             os.makedirs(config.output_path)
 
-        # store hyperparameters
         self.config = config
 
         self.env = env
 
-        # state and action space
         self.observation_dim, self.action_dim = self.env.observation_space, self.env.action_space
         self.lr = self.config.learning_rate
 
@@ -116,7 +113,6 @@ class PolicyGradient(object):
                 returns[t] = g_t
             all_returns.append(returns)
 
-        # Stack all the returns into a single tensor
         returns = np.concatenate(all_returns)
         return returns
 
@@ -144,10 +140,7 @@ class PolicyGradient(object):
             advantages: np array of shape [batch size]
         """
         if self.config.baseline:
-            # override the behavior of advantage by subtracting baseline
-            advantages = self.baseline_network.calculate_advantage(
-                returns, observations
-            )
+            advantages = self.baseline_network.calculate_advantage(returns, observations)
         else:
             advantages = returns  # baseline is 0 in case of no baseline
 
@@ -169,17 +162,13 @@ class PolicyGradient(object):
         actions = np2torch(actions)
         advantages = np2torch(advantages)
 
-        # Get log probabilities of the actions
         action_dists = self.policy.action_distribution(observations, current_batch)
         log_probs = action_dists.log_prob(actions)
 
-        # Zero out the gradients from the previous pass
         self.optimizer.zero_grad()
 
-        # Compute the loss function
         loss = -(log_probs * advantages).mean()
 
-        # Backward pass to compute gradients and update the policy
         loss.backward()
         self.optimizer.step()
 
@@ -192,7 +181,6 @@ class PolicyGradient(object):
         # compute Q-val estimates (discounted future returns) for each time step
         returns = self.get_returns(episodes)
 
-        # advantage will depend on the baseline implementation
         advantages = self.calculate_advantage(returns, observations)
 
         batch_rewards = np.array([episode.total_reward for episode in episodes])
@@ -216,7 +204,6 @@ class PolicyGradient(object):
             episodes = self.sample_episodes(current_batch=t)
             observations, actions, returns, advantages, batch_rewards = self.merge_episodes_to_batch(episodes)
 
-            # run training operations
             if self.config.baseline:
                 self.baseline_network.update_baseline(returns, observations)
 
@@ -230,7 +217,6 @@ class PolicyGradient(object):
             averaged_total_rewards.append(avg_batch_reward)
             logger.info(msg)
 
-            # WANDB LOG
             if self.config.run_name:
                 wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
 

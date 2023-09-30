@@ -56,10 +56,8 @@ class Environment:
     def reset(self):
         self.question, self.initial_prompt, self.ground_truth = self.dataset.reset()
         self.question_encodings = self.retriever.encode(self.question)
-        # Adding Answer: to original question
         self.context_prompt = ''
         self.prompt_encodings = self.retriever.encode(self.context_prompt)
-        # Get retriever tok_k for question
         self.top_k_closest_questions_indices = self.retriever.retrieve(self.question_encodings)
         return np.concatenate([self.prompt_encodings, self.question_encodings])
 

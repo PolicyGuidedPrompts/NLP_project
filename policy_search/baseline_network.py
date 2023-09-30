@@ -32,7 +32,6 @@ class BaselineNetwork(nn.Module):
         with CaptureStdout() as capture:
             summary(self.network, input_size=(self.observation_dim,))
 
-        # Define the optimizer for the baseline
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=self.lr)
         logger.info(f"Baseline initialized with:"
                     f"\n{capture.get_output()}"
@@ -47,7 +46,6 @@ class BaselineNetwork(nn.Module):
         Returns:
             output: torch.Tensor of shape [batch size]
         """
-        # Pass the observations through the network
         output = self.network(observations)
         output = output.squeeze()
 
@@ -65,10 +63,8 @@ class BaselineNetwork(nn.Module):
         """
         observations = np2torch(observations)
 
-        # Use the forward pass of the baseline network to get the predicted value of the state
         predicted_values = self(observations)
 
-        # Compute the advantage estimates
         advantages = returns - predicted_values.detach().cpu().numpy()
 
         return advantages

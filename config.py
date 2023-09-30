@@ -73,7 +73,6 @@ class Config:
         rel_output_path = os.path.join("results", first_level, second_level)
         self.output_path = os.path.join(self.BASE_DIR, rel_output_path)
 
-        # Note: Using os.path.join ensures the path is constructed correctly for the operating system.
         self.model_output = os.path.join(self.output_path, "model.weights")
         self.log_path = os.path.join(self.output_path, "log.txt")
         self.scores_output = os.path.join(self.output_path, "scores.npy")

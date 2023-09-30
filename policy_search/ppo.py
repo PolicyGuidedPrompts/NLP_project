@@ -31,19 +31,15 @@ class PPO(PolicyGradient):
         advantages = np2torch(advantages)
         old_logprobs = np2torch(old_logprobs)
 
-        # Get the distribution of actions under the current policy
         dist = self.policy.action_distribution(observations, current_batch)
 
-        # Compute log probabilities for the actions
         new_logprobs = dist.log_prob(actions).squeeze()
 
         # Compute the ratio between new policy and old policy
         ratio = (new_logprobs - old_logprobs).exp()
 
-        # Compute clipped objective
         clipped_advantage = torch.clamp(ratio, 1.0 - self.config.eps_clip, 1.0 + self.config.eps_clip) * advantages
 
-        # Compute the PPO objective function
         loss = -torch.min(ratio * advantages, clipped_advantage).mean()
 
         self.optimizer.zero_grad()
@@ -60,7 +56,6 @@ class PPO(PolicyGradient):
         # compute Q-val estimates (discounted future returns) for each time step
         returns = self.get_returns(episodes)
 
-        # advantage will depend on the baseline implementation
         advantages = self.calculate_advantage(returns, observations)
 
         batch_rewards = np.array([episode.total_reward for episode in episodes])
@@ -74,7 +69,6 @@ class PPO(PolicyGradient):
             observations, actions, returns, advantages, batch_rewards, old_logprobs = self.merge_episodes_to_batch(
                 episodes)
 
-            # run training operations
             for k in range(self.config.update_freq):
                 self.baseline_network.update_baseline(returns, observations)
                 self.update_policy(observations, actions, advantages, old_logprobs, current_batch=t)
