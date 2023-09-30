@@ -1,5 +1,6 @@
 import logging
 import os
+from abc import abstractmethod
 
 import openai
 import torch
@@ -26,29 +27,14 @@ class LLMModel:
         self.tokenizer = None
         logger.info(f"Loading llm model {self.model_name=}")
 
-    # model that doesn't support this tokenization should override this logic
     def is_prompt_too_long(self, prompt):
         tokenized = self.tokenizer(prompt, return_tensors="pt", truncation=True, padding=True)
         tokenized_len = tokenized['input_ids'].shape[1]
         return tokenized_len > self.max_prompt_tokenized_len
 
-    # model that doesn't support this tokenization should override this logic
+    @abstractmethod
     def generate_answer(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
-        input_ids = inputs['input_ids'].to(device)
-        attention_mask = inputs['attention_mask'].to(device)
-
-        with torch.no_grad():
-            output = self.model.generate(input_ids,
-                                         attention_mask=attention_mask,
-                                         early_stopping=True,
-                                         max_new_tokens=self.max_output_tokenized_len,
-                                         temperature=self.temperature).cpu()
-
-        generated_answer = self.tokenizer.decode(
-            output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
-        )
-        return generated_answer.strip()
+        pass
 
     @property
     def model_path(self):
@@ -69,6 +55,84 @@ class GPT2LLM(LLMModel):
 
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
+
+
+class GPT35TurboLLM0613(LLMModel):
+    openai.api_key = os.environ.get('OPENAI_API_KEY')
+    if not openai.api_key:
+        raise ValueError("Please set the OPENAI_API_KEY environment variable.")
+
+    model_name = "gpt-3.5-turbo-0613"
+
+    def __init__(self, config):
+        super().__init__(config)
+
+        self.tokenizer = transformers.GPT2Tokenizer.from_pretrained('gpt2', cache_dir=self.models_dir)
+
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+    #  retry for 3 times with a 1-minute wait
+    @retry(stop_max_attempt_number=3, wait_fixed=60 * 1000)
+    def generate_answer(self, prompt):
+        try:
+            with timeout(60):  # Set the timeout value for 60 seconds
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo-0613",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=self.max_output_tokenized_len,
+                    temperature=self.temperature)
+                return response['choices'][0]['message']['content'].strip()
+        except TimeoutError:
+            logger.warning(f"TimeoutError while generating answer")
+            raise
+
+
+class BaseFlanT5LLM(LLMModel):
+    repository = 'google'
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
+        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
+                                                                             cache_dir=self.models_dir).to(device)
+        self.model.eval()
+
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+    def generate_answer(self, prompt):
+        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
+        input_ids = inputs['input_ids'].to(device)
+        attention_mask = inputs['attention_mask'].to(device)
+
+        with torch.no_grad():
+            output = self.model.generate(input_ids,
+                                         attention_mask=attention_mask,
+                                         early_stopping=True,
+                                         max_new_tokens=self.max_output_tokenized_len,
+                                         temperature=self.temperature).cpu()
+
+        generated_answer = self.tokenizer.decode(
+            output[0], skip_special_tokens=True
+        )
+        return generated_answer.strip()
+
+
+class FlanT5SmallLLM(BaseFlanT5LLM):
+    model_name = "flan-t5-small"
+
+
+class FlanT5BaseLLM(BaseFlanT5LLM):
+    model_name = "flan-t5-base"
+
+
+class FlanT5LargeLLM(BaseFlanT5LLM):
+    model_name = "flan-t5-large"
+
+
+class FlanT5XLLLM(BaseFlanT5LLM):
+    model_name = "flan-t5-xl"
 
 
 class Llama2LLM(LLMModel):
@@ -109,25 +173,7 @@ class Llama2LLM(LLMModel):
 
     def generate_answer(self, prompt):
         formatted_prompt = f"{self.B_INST} {self.B_SYS}{self.prefix}\n{prompt}{self.E_SYS} {self.E_INST}"
-        return super().generate_answer(formatted_prompt)
-
-
-class FlanT5BaseLLM(LLMModel):
-    model_name = "flan-t5-base"
-    repository = 'google'
-
-    def __init__(self, config):
-        super().__init__(config)
-        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
-                                                                             cache_dir=self.models_dir).to(device)
-        self.model.eval()
-
-        if not self.tokenizer.pad_token:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-
-    def generate_answer(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
+        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', truncation=True)
         input_ids = inputs['input_ids'].to(device)
         attention_mask = inputs['attention_mask'].to(device)
 
@@ -139,146 +185,19 @@ class FlanT5BaseLLM(LLMModel):
                                          temperature=self.temperature).cpu()
 
         generated_answer = self.tokenizer.decode(
-            output[0], skip_special_tokens=True
+            output[:, input_ids.shape[-1]:][0], skip_special_tokens=True
         )
         return generated_answer.strip()
-
-
-class FlanT5SmallLLM(LLMModel):
-    model_name = "flan-t5-small"
-    repository = 'google'
-
-    def __init__(self, config):
-        super().__init__(config)
-        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
-                                                                             cache_dir=self.models_dir).to(device)
-        self.model.eval()
-
-        if not self.tokenizer.pad_token:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-
-    def generate_answer(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
-        input_ids = inputs['input_ids'].to(device)
-        attention_mask = inputs['attention_mask'].to(device)
-
-        with torch.no_grad():
-            output = self.model.generate(input_ids,
-                                         attention_mask=attention_mask,
-                                         early_stopping=True,
-                                         max_new_tokens=self.max_output_tokenized_len,
-                                         temperature=self.temperature).cpu()
-
-        generated_answer = self.tokenizer.decode(
-            output[0], skip_special_tokens=True
-        )
-        return generated_answer.strip()
-
-
-class FlanT5LargeLLM(LLMModel):
-    model_name = "flan-t5-large"
-    repository = 'google'
-
-    def __init__(self, config):
-        super().__init__(config)
-        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
-                                                                             cache_dir=self.models_dir).to(device)
-        self.model.eval()
-
-        if not self.tokenizer.pad_token:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-
-    def generate_answer(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
-        input_ids = inputs['input_ids'].to(device)
-        attention_mask = inputs['attention_mask'].to(device)
-
-        with torch.no_grad():
-            output = self.model.generate(input_ids,
-                                         attention_mask=attention_mask,
-                                         early_stopping=True,
-                                         max_new_tokens=self.max_output_tokenized_len,
-                                         temperature=self.temperature).cpu()
-
-        generated_answer = self.tokenizer.decode(
-            output[0], skip_special_tokens=True
-        )
-        return generated_answer.strip()
-
-
-class FlanT5XLLLM(LLMModel):
-    model_name = "flan-t5-xl"
-    repository = 'google'
-
-    def __init__(self, config):
-        super().__init__(config)
-        self.tokenizer = transformers.T5Tokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
-        self.model = transformers.T5ForConditionalGeneration.from_pretrained(self.model_path,
-                                                                             cache_dir=self.models_dir).to(device)
-        self.model.eval()
-
-        if not self.tokenizer.pad_token:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-
-    def generate_answer(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
-        input_ids = inputs['input_ids'].to(device)
-        attention_mask = inputs['attention_mask'].to(device)
-
-        with torch.no_grad():
-            output = self.model.generate(input_ids,
-                                         attention_mask=attention_mask,
-                                         early_stopping=True,
-                                         max_new_tokens=self.max_output_tokenized_len,
-                                         temperature=self.temperature).cpu()
-
-        generated_answer = self.tokenizer.decode(
-            output[0], skip_special_tokens=True
-        )
-        return generated_answer.strip()
-
-
-class GPT35TurboLLM0613(LLMModel):
-    openai.api_key = os.environ.get('OPENAI_API_KEY')
-    if not openai.api_key:
-        raise ValueError("Please set the OPENAI_API_KEY environment variable.")
-
-    model_name = "gpt-3.5-turbo-0613"
-
-    def __init__(self, config):
-        super().__init__(config)
-
-        self.tokenizer = transformers.GPT2Tokenizer.from_pretrained('gpt2', cache_dir=self.models_dir)
-
-        if not self.tokenizer.pad_token:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-
-    #  retry for 3 times with a 1-minute wait
-    @retry(stop_max_attempt_number=3, wait_fixed=60 * 1000)
-    def generate_answer(self, prompt):
-        try:
-            with timeout(60):  # Set the timeout value for 60 seconds
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo-0613",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=self.max_output_tokenized_len,
-                    temperature=self.temperature)
-                return response['choices'][0]['message']['content'].strip()
-        except TimeoutError:
-            logger.warning(f"TimeoutError while generating answer")
-            raise
 
 
 AVAILABLE_LLM_MODELS = {
-    'gpt3.5': GPT35TurboLLM0613,
     'gpt2': GPT2LLM,
-    'llama-2-7b': Llama2LLM,
-    'flan-t5-base': FlanT5BaseLLM,
+    'gpt3.5': GPT35TurboLLM0613,
     'flan-t5-small': FlanT5SmallLLM,
+    'flan-t5-base': FlanT5BaseLLM,
     'flan-t5-large': FlanT5LargeLLM,
-    'flan-t5-xl': FlanT5XLLLM
+    'flan-t5-xl': FlanT5XLLLM,
+    'llama-2-7b': Llama2LLM
 }
 
 
