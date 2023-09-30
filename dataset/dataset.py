@@ -22,6 +22,7 @@ class Dataset(ABC):
     def __init__(self):
         self.data = self.load_from_repository()
         logger.info(f"Scoring method: {self.get_scoring_method_name()}")
+        self.dataset_name = None
 
     def score(self, ground_truth, generated_answer):
         try:
@@ -39,7 +40,8 @@ class Dataset(ABC):
             logger.error(f"Error in scoring: {e}")
             return -1.0
 
-    def normalize_answer(self, s):
+    @staticmethod
+    def normalize_answer(s):
         """Lower text and remove punctuation, articles and extra whitespace."""
 
         def remove_articles(text):
@@ -86,7 +88,8 @@ class StrategyQaDataset(Dataset):
     repository = "wics"
     dataset_name = "strategy-qa"
 
-    prompt_prefix = "See the questions and answers below and answer the last question in the same fashion base on the facts.\n"
+    prompt_prefix = "See the questions and answers below and " \
+                    "answer the last question in the same fashion base on the facts.\n"
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from {self.repository}")
@@ -202,7 +205,8 @@ class AquaRat(Dataset):
                      f'{current_prompt}'
         return new_prompt
 
-    def extract_final_answer(self, generated_answer):
+    @staticmethod
+    def extract_final_answer(generated_answer):
         match = re.search(r"The final answer is: ([A-E])", generated_answer)
         return match.group(1) if match else None
 

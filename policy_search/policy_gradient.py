@@ -25,7 +25,6 @@ class PolicyGradient(object):
 
     def __init__(self, env, config):
         # directory for training outputs
-
         if not os.path.exists(config.output_path):
             os.makedirs(config.output_path)
 
@@ -52,6 +51,10 @@ class PolicyGradient(object):
                     f"\n{self.observation_dim=}, "
                     f"{self.action_dim=}, "
                     f"{self.lr=}")
+
+        self.optimizer = None
+        self.policy = None
+        self._network = None
 
     def init_policy(self):
         self._network = build_mlp(
@@ -94,11 +97,11 @@ class PolicyGradient(object):
 
         Args:
             episodes (list): A list of episodes. Each episode is expected to have a 'rewards' attribute
-                             which is a np.array of the corresponding rewards for each timestep in the episode.
+                             which is a np array of the corresponding rewards for each timestep in the episode.
 
         Returns:
-            np.array: A np.array containing the discounted cumulative returns G_t for each timestep
-                          across all episodes. The array shape is (total_timesteps), where
+            np array: A np array containing the discounted cumulative returns G_t for each timestep
+                          across all episodes. The array shape is (total_timestamps), where
                           total_timesteps is the sum of the number of timesteps across all episodes.
         """
 
@@ -107,22 +110,23 @@ class PolicyGradient(object):
             rewards = episode.rewards
             returns = np.zeros_like(rewards, dtype=np.float64)
 
-            G_t = 0
+            g_t = 0
             for t in reversed(range(len(rewards))):
-                G_t = rewards[t] + self.config.gamma * G_t
-                returns[t] = G_t
+                g_t = rewards[t] + self.config.gamma * g_t
+                returns[t] = g_t
             all_returns.append(returns)
 
         # Stack all the returns into a single tensor
         returns = np.concatenate(all_returns)
         return returns
 
-    def normalize_advantage(self, advantages):
+    @staticmethod
+    def normalize_advantage(advantages):
         """
         Args:
-            advantages: np.array of shape [batch size]
+            advantages: np array of shape [batch size]
         Returns:
-            normalized_advantages: np.array of shape [batch size]
+            normalized_advantages: np array of shape [batch size]
         """
         mean_advantage = np.mean(advantages)
         std_advantage = np.std(advantages)
@@ -134,10 +138,10 @@ class PolicyGradient(object):
         """
         Calculates the advantage for each of the observations
         Args:
-            returns: np.array of shape [batch size]
-            observations: np.array of shape [batch size, dim(observation space)]
+            returns: np array of shape [batch size]
+            observations: np array of shape [batch size, dim(observation space)]
         Returns:
-            advantages: np.array of shape [batch size]
+            advantages: np array of shape [batch size]
         """
         if self.config.baseline:
             # override the behavior of advantage by subtracting baseline
@@ -155,11 +159,11 @@ class PolicyGradient(object):
     def update_policy(self, observations, actions, advantages, current_batch):
         """
         Args:
-            observations: np.array of shape [batch size, dim(observation space)]
-            actions: np.array of shape
+            observations: np array of shape [batch size, dim(observation space)]
+            actions: np array of shape
                 [batch size, dim(action space)] if continuous
                 [batch size] (and integer type) if discrete
-            advantages: np.array of shape [batch size]
+            advantages: np array of shape [batch size]
         """
         observations = np2torch(observations)
         actions = np2torch(actions)

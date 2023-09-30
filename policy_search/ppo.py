@@ -19,12 +19,12 @@ class PPO(PolicyGradient):
     def update_policy(self, observations, actions, advantages, old_logprobs, current_batch):
         """
         Args:
-            observations: np.array of shape [batch size, dim(observation space)]
-            actions: np.array of shape
+            observations: np array of shape [batch size, dim(observation space)]
+            actions: np array of shape
                 [batch size, dim(action space)] if continuous
                 [batch size] (and integer type) if discrete
-            advantages: np.array of shape [batch size]
-            old_logprobs: np.array of shape [batch size]
+            advantages: np array of shape [batch size]
+            old_logprobs: np array of shape [batch size]
         """
         observations = np2torch(observations)
         actions = np2torch(actions)

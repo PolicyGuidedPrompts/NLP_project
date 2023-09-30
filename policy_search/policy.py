@@ -26,10 +26,10 @@ class BasePolicy:
     def act(self, observation, current_batch, return_log_prob=False):
         """
         Args:
-            observation: np.array of shape (1, dim(observation space))
+            observation: np array of shape (1, dim(observation space))
         Returns:
-            sampled_action: np.array of shape (1, *shape of action)
-            log_probs: np.array of shape [batch size] (optionally, if return_log_prob)
+            sampled_action: np array of shape (1, *shape of action)
+            log_probs: np array of shape [batch size] (optionally, if return_log_prob)
         """
         observation = np2torch(observation)
         action_distribution = self.action_distribution(observation, current_batch)

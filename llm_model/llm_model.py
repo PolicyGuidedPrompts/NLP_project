@@ -1,10 +1,11 @@
 import logging
 import os
-from abc import abstractmethod
+
+import openai
 import torch
 import transformers
-import openai
 from retrying import retry
+
 from utils.network_utils import device
 from utils.utils import timeout
 
@@ -16,11 +17,13 @@ class LLMModel:
     models_dir = os.path.join(script_dir, "../saved_models/llm_models")
 
     def __init__(self, config):
-        self.model = None
-        self.tokenizer = None
         self.max_prompt_tokenized_len = config.llm_max_prompt_tokenized_len
         self.max_output_tokenized_len = config.llm_max_output_tokenized_len
         self.temperature = config.llm_temperature
+
+        self.model_name = None
+        self.model = None
+        self.tokenizer = None
         logger.info(f"Loading llm model {self.model_name=}")
 
     # model that doesn't support this tokenization should override this logic
@@ -256,7 +259,7 @@ class GPT35TurboLLM0613(LLMModel):
     @retry(stop_max_attempt_number=3, wait_fixed=60 * 1000)
     def generate_answer(self, prompt):
         try:
-            with timeout(60):  # Set the timeout value for 5 seconds
+            with timeout(60):  # Set the timeout value for 60 seconds
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo-0613",
                     messages=[{"role": "user", "content": prompt}],

@@ -19,21 +19,11 @@ class RetrieverModel(ABC):
     def __init__(self, model_name, config):
         self.model_name = model_name
         self.config = config
+        self.dataset = None
         logger.info(f"Loading retriever model {self.model_name=}")
 
-    @abstractmethod
-    def retrieve(self, encoding):
-        pass
-
-    @abstractmethod
-    def encode(self, input):
-        pass
-
-    @property
-    def model_path(self):
-        if hasattr(self, 'repository'):
-            return os.path.join(self.repository, self.model_name)
-        return self.model_name
+    def retrieve(self, _encoding):
+        return np.array(range(len(self.dataset.data)))
 
     def _normalize_encoding(self, encoding):
         if self.config.normalize_encoding_method == 'l2':
@@ -42,6 +32,16 @@ class RetrieverModel(ABC):
             return (encoding - encoding.mean()) / encoding.std()
         else:
             return encoding
+
+    @abstractmethod
+    def encode(self, _input):
+        pass
+
+    @property
+    def model_path(self):
+        if hasattr(self, 'repository'):
+            return os.path.join(self.repository, self.model_name)
+        return self.model_name
 
 
 class SBertRetriever(RetrieverModel):
@@ -66,8 +66,8 @@ class SBertRetriever(RetrieverModel):
                 os.makedirs(self.cache_dir)
             torch.save(self.dataset_embeddings, self.cache_file)
 
-    def encode(self, input):
-        encoding = self.model.encode(input, convert_to_tensor=True).detach().cpu().numpy()
+    def encode(self, encoder_input):
+        encoding = self.model.encode(encoder_input, convert_to_tensor=True).detach().cpu().numpy()
         return self._normalize_encoding(encoding)
 
     def retrieve(self, encoding):
@@ -91,15 +91,12 @@ class BertEncoder(RetrieverModel):
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir)
         self.model = AutoModel.from_pretrained(self.model_path, cache_dir=self.models_dir).to(device)
 
-    def encode(self, input):
-        inputs = self.tokenizer(input, return_tensors="pt", truncation=True, padding=True).to(device)
+    def encode(self, encoder_input):
+        inputs = self.tokenizer(encoder_input, return_tensors="pt", truncation=True, padding=True).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs)
         encoding = outputs.last_hidden_state[0, 0, :].detach().cpu().numpy()
         return self._normalize_encoding(encoding)
-
-    def retrieve(self, _encoding):
-        return np.array(range(len(self.dataset.data)))
 
 
 class BgeLargeEnEncoder(RetrieverModel):
@@ -121,9 +118,6 @@ class BgeLargeEnEncoder(RetrieverModel):
         encoding = sentence_embeddings.squeeze().detach().cpu().numpy()
         return self._normalize_encoding(encoding)
 
-    def retrieve(self, _encoding):
-        return np.array(range(len(self.dataset.data)))
-
 
 class GteLargeEncoder(RetrieverModel):
     repository = "thenlper"
@@ -143,9 +137,6 @@ class GteLargeEncoder(RetrieverModel):
         last_hidden = outputs.last_hidden_state.masked_fill(~attention_mask[..., None].bool(), 0.0)
         encoding = (last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]).squeeze().detach().cpu().numpy()
         return self._normalize_encoding(encoding)
-
-    def retrieve(self, _encoding):
-        return np.array(range(len(self.dataset.data)))
 
 
 AVAILABLE_RETRIEVERS = {

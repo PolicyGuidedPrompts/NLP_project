@@ -15,7 +15,6 @@ ALLOWED_NORMALIZE_ENCODING_METHODS = ['l2', 'instance']  # can leave empty for n
 # exponential: T = T_init * (T_exploration_decay_factor)^(current_batch) + 1
 ALLOWED_POLICY_EXPLORATION_LOGIC = ['epsilon_greedy', 'linear_temperature_decay', 'exponential_temperature_decay']
 
-
 parser = argparse.ArgumentParser()
 # Run name
 parser.add_argument("--run_name", type=str, default=None)
@@ -50,12 +49,13 @@ parser.add_argument("--normalize_advantage", type=bool, default=True)
 parser.add_argument("--eps_clip", type=float, default=0.2)  # For PPO
 parser.add_argument("--update_freq", type=int, default=5)  # For PPO
 # Policy Exploration Logic
-parser.add_argument("--policy_exploration_logic", type=str, default='epsilon_greedy', choices=ALLOWED_POLICY_EXPLORATION_LOGIC)
+parser.add_argument("--policy_exploration_logic", type=str, default='epsilon_greedy',
+                    choices=ALLOWED_POLICY_EXPLORATION_LOGIC)
 parser.add_argument("--initial_temperature", type=float, default=400.0)  # For both linear and exponential
 parser.add_argument("--end_temperature", type=float, default=1.0)  # For linear and epsilon greedy
 parser.add_argument("--exploration_decay_factor", type=float, default=0.995)
 # Global
 parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--num_batches", type=int, default=1)  # number of batches trained on
-parser.add_argument("--num_episodes_per_batch", type=int,
-                    default=10)  # number of steps used to compute each policy update
+# number of steps used to compute each policy update
+parser.add_argument("--num_episodes_per_batch", type=int, default=10)

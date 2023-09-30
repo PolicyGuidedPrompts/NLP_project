@@ -63,9 +63,9 @@ class CaptureStdout:
 
 
 @contextmanager
-def timeout(time):
+def timeout(time_in_seconds):
     signal.signal(signal.SIGALRM, raise_timeout)
-    signal.alarm(time)
+    signal.alarm(time_in_seconds)
     try:
         yield
     except TimeoutError:

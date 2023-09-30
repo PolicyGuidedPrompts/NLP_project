@@ -57,11 +57,11 @@ class BaselineNetwork(nn.Module):
     def calculate_advantage(self, returns, observations):
         """
         Args:
-            returns: np.array of shape [batch size]
+            returns: np array of shape [batch size]
                 all discounted future returns for each step
-            observations: np.array of shape [batch size, dim(observation space)]
+            observations: np array of shape [batch size, dim(observation space)]
         Returns:
-            advantages: np.array of shape [batch size]
+            advantages: np array of shape [batch size]
         """
         observations = np2torch(observations)
 
@@ -76,9 +76,9 @@ class BaselineNetwork(nn.Module):
     def update_baseline(self, returns, observations):
         """
         Args:
-            returns: np.array of shape [batch size], containing all discounted
+            returns: np array of shape [batch size], containing all discounted
                 future returns for each step
-            observations: np.array of shape [batch size, dim(observation space)]
+            observations: np array of shape [batch size, dim(observation space)]
         """
         returns = np2torch(returns)
         observations = np2torch(observations)
