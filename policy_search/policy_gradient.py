@@ -69,7 +69,7 @@ class PolicyGradient(object):
 
         while not done:
             action, _ = self.policy.act(observation.reshape(1, -1), current_batch)
-            next_observation, reward, done, _ = self.env.step(action.item())
+            next_observation, reward, done = self.env.step(action.item())
             episode.add(observation, action.item(), reward)
             observation = next_observation
 
@@ -81,8 +81,8 @@ class PolicyGradient(object):
         done = False
 
         while not done:
-            action, _ = self.policy.test_act(observation.reshape(1, -1))
-            next_observation, reward, done, _ = self.env.step(action.item())
+            action = self.policy.test_act(observation.reshape(1, -1))
+            next_observation, reward, done = self.env.step(action.item())
             episode.add(observation, action.item(), reward)
             observation = next_observation
 
@@ -242,7 +242,7 @@ class PolicyGradient(object):
             avg_test_reward = test_rewards_np.mean()
             std_test_reward = test_rewards_np.std()
 
-            msg = "Average reward: {:04.2f} +/- {:04.2f}".format(avg_test_reward, std_test_reward)
+            msg = "Test average reward: {:04.2f} +/- {:04.2f}".format(avg_test_reward, std_test_reward)
             logger.info(msg)
 
             if self.config.run_name:

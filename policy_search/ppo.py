@@ -93,7 +93,7 @@ class PPO(PolicyGradient):
 
         while not done:
             action, old_logprob = self.policy.act(observation.reshape(1, -1), current_batch, return_log_prob=True)
-            next_observation, reward, done, _ = self.env.step(action.item())
+            next_observation, reward, done = self.env.step(action.item())
             episode.add(observation, action.item(), reward, old_logprob.item())
             observation = next_observation
 

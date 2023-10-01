@@ -37,13 +37,12 @@ class Environment:
                                                f'{self.initial_prompt}')
 
         if done:
-            reward, generated_answer = self.evaluate_prompt()
+            reward = self.evaluate_prompt()
         else:
             reward = 0.0
-            generated_answer = None
 
         prompt_encodings = self.retriever.encode(self.context_prompt)
-        return np.concatenate([prompt_encodings, self.question_encodings]), reward, done, generated_answer
+        return np.concatenate([prompt_encodings, self.question_encodings]), reward, done
 
     def reset(self, mode='train', index=None):
         self.question, self.initial_prompt, self.ground_truth = self.dataset.reset(mode=mode, index=index)
@@ -62,4 +61,4 @@ class Environment:
 
         reward = self.dataset.score(self.ground_truth, generated_answer)
 
-        return reward, generated_answer
+        return reward
