@@ -185,37 +185,6 @@ class Llama2LLM(LLMModel):
         return generated_answer.strip()
 
 
-class Phi15LLM(LLMModel):
-    model_name = "phi-1_5"
-    repository = 'microsoft'
-
-    def __init__(self, config):
-        super().__init__(config)
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.model_path, cache_dir=self.models_dir, trust_remote_code=True)
-        self.model = transformers.AutoModelForCausalLM.from_pretrained(self.model_path, cache_dir=self.models_dir, trust_remote_code=True).to(
-            device)
-        self.model.eval()
-
-        if not self.tokenizer.pad_token:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-
-    def generate_answer(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True)
-        input_ids = inputs['input_ids'].to(device)
-        attention_mask = inputs['attention_mask'].to(device)
-
-        with torch.no_grad():
-            output = self.model.generate(input_ids,
-                                         attention_mask=attention_mask,
-                                         early_stopping=True,
-                                         max_new_tokens=self.max_output_tokenized_len,
-                                         temperature=self.temperature).cpu()
-
-        generated_answer = self.tokenizer.decode(
-            output[0], skip_special_tokens=True
-        )
-        return generated_answer.strip()
-
 AVAILABLE_LLM_MODELS = {
     'gpt2': GPT2LLM,
     'gpt3.5': GPT35TurboLLM0613,
@@ -223,8 +192,7 @@ AVAILABLE_LLM_MODELS = {
     'flan-t5-base': FlanT5BaseLLM,
     'flan-t5-large': FlanT5LargeLLM,
     'flan-t5-xl': FlanT5XLLLM,
-    'llama-2-7b': Llama2LLM,
-    'phi-1_5': Phi15LLM
+    'llama-2-7b': Llama2LLM
 }
 
 
