@@ -16,15 +16,12 @@ from utils.utils import get_logger
 
 
 # TODO - don't forget in readme to specify env variables roles
-# TODO - Download the best model file from a sweep https://wandb.ai/yair_nlp/NLP_project/overview
+# TODO - use sweep for grid search
 
 def set_seeds(seed):
     torch.random.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
-
-
-# TODO - create predetermined configuration files instead that work together
 
 
 if __name__ == "__main__":

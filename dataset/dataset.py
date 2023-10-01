@@ -12,7 +12,6 @@ from datasets import load_dataset
 logger = logging.getLogger('root')
 
 
-# TODO - remember test part of dataset
 class Dataset(ABC):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     datasets_dir = os.path.join(script_dir, "../saved_datasets")
@@ -137,15 +136,14 @@ class StrategyQaDataset(Dataset):
 class SquadDataset(Dataset):
     dataset_name = "squad"
 
-    # TODO - should fix logic here, more specifically the scoring method
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name}")
         data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)
 
-        df_train = data["train"].to_pandas()[:50]
+        df_train = data["train"].to_pandas()
         df_train['answers'] = df_train['answers'].apply(lambda x: x['text'] if x else None)
 
-        df_test = data["validation"].to_pandas()[:50]
+        df_test = data["validation"].to_pandas()
         df_test['answers'] = df_test['answers'].apply(lambda x: x['text'] if x else None)
 
         return df_train[["question", "answers", "context"]], df_test[["question", "answers", "context"]]
@@ -187,7 +185,7 @@ class OpenTDB(Dataset):
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from local CSV")
-        data = pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[:50]
+        data = pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))
         df_train, df_test = train_test_split(data, test_size=0.2, random_state=42)
         return df_train, df_test
 
@@ -216,10 +214,9 @@ class AquaRat(Dataset):
     prompt_prefix = "See the questions and answers below and answer the last question in the same fashion." \
                     "The final answer should begin with: 'The final answer is: A/B/C/D/E'\n"
 
-    # TODO - remove [:50]
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from local CSV")
-        df = pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))[1:51]
+        df = pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))
         df['options'] = df['options'].apply(lambda x: '\n'.join(ast.literal_eval(x)))
         df_train, df_test = train_test_split(df, test_size=0.2, random_state=42)
         return df_train, df_test

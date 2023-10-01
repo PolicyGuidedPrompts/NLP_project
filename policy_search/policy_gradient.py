@@ -206,7 +206,6 @@ class PolicyGradient(object):
             config={k: v for k, v in vars(self.config).items() if k not in fields_to_exclude}
         )
 
-    # TODO - save model every x timestamps
     def train(self):
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes(current_batch=t)
