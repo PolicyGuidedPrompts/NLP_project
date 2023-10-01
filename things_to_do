@@ -1,41 +1,13 @@
-Benchmarking
-
-Maybe try Experience Replay
-
-Currently our Agent doesn't keep track of the original question.
-We might want an agent that keep the original question and only add the new information to it.
-
 How good is the algorithm compared to simply adding questions+answers by random (I.e check against context learning with no training)
-
-Split train test
-
-Hyperparameter tuning
 
 Score based on multiple tries, majority vote, it time permits
 
-Different policy search algorithms (Maybe add DQN/TRPO)
+Different policy search algorithms (TRPO)
 
 Continuous action space
-
-Make sure Agent doesn't choose questions that simply returns True all the time when the gold answer is true
-
-Make sure actions doesn't repeat in same episode
-
-Add retrievers to the pipeline
-
-Add description and not only the question to the prompt
-
-Think about adding 4 last prompts as part of the state
-
-Missing our epsilon greedy method
-
-Add wandb
 
 Make configuration YAML file
 
 Install script for the entire github project
 
 Create Readme
-
-If time permits, read advanced options:
-https://platform.openai.com/docs/guides/gpt
