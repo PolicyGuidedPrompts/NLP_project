@@ -24,6 +24,9 @@ class Dataset(ABC):
         logger.info(f"Scoring method: {self.get_scoring_method_name()}")
 
     def score(self, ground_truth, generated_answer):
+        return self._f1_score(ground_truth, generated_answer)
+
+    def _f1_score(self, ground_truth, generated_answer):
         try:
             prediction_tokens = self.normalize_answer(generated_answer).split()
             ground_truth_tokens = self.normalize_answer(ground_truth).split()
@@ -137,20 +140,22 @@ class SquadDataset(Dataset):
     # TODO - should fix logic here, more specifically the scoring method
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name}")
-        df_train = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["train"].to_pandas()
-        df_train['answer'] = df_train['answers'].apply(lambda x: x['text'][0] if x else None)
+        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)
 
-        df_test = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["validation"].to_pandas()
-        df_test['answer'] = df_test['answers'].apply(lambda x: x['text'][0] if x else None)
+        df_train = data["train"].to_pandas()[:50]
+        df_train['answers'] = df_train['answers'].apply(lambda x: x['text'] if x else None)
 
-        return df_train[["question", "answer", "context"]], df_test[["question", "answer", "context"]]
+        df_test = data["validation"].to_pandas()[:50]
+        df_test['answers'] = df_test['answers'].apply(lambda x: x['text'] if x else None)
+
+        return df_train[["question", "answers", "context"]], df_test[["question", "answers", "context"]]
 
     def reset(self, mode, index):
         if mode == 'train':
             sample = self.train_data.sample(1).iloc[0]
         else:
             sample = self.test_data.iloc[index]
-        question, ground_truth = sample["question"], sample["answer"]
+        question, ground_truth = sample["question"], sample["answers"]
         initial_prompt = f'Question: {sample["question"]}\n' \
                          f'Context: {sample["context"]}\n' \
                          f'Answer: '
@@ -160,9 +165,20 @@ class SquadDataset(Dataset):
         sample = self.train_data.iloc[action]
         new_prompt = f'Question: {sample["question"]}\n' \
                      f'Context: {sample["context"]}\n' \
-                     f'Answer: {sample["answer"]}\n' \
+                     f'Answer: {sample["answers"][0]}\n' \
                      f'{current_prompt}'
         return new_prompt
+
+    def score(self, ground_truths, generated_answer):
+        try:
+            return max([self._f1_score(ground_truth, generated_answer) for ground_truth in ground_truths])
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1.0
+
+    @staticmethod
+    def get_scoring_method_name():
+        return "custom f1_score"
 
 
 class OpenTDB(Dataset):
