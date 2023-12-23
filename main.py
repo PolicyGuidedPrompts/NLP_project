@@ -17,6 +17,10 @@ from utils.utils import get_logger
 
 # TODO - don't forget in readme to specify env variables roles
 # TODO - use sweep for grid search
+# TODO - not sure prompt prefix is good idea
+# TODO - probably need to remove bert, bge, gte encoders
+# TODO - in build_mlp the size is actually first_layer_size
+# TODO - make sure we load the entire dataset and not a subset of it
 
 def set_seeds(seed):
     torch.random.manual_seed(seed)
