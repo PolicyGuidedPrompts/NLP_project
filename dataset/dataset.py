@@ -243,7 +243,7 @@ class AquaRat(Dataset):
 
     @staticmethod
     def extract_final_answer(generated_answer):
-        match = re.search(r"The final answer is: ([A-E])", generated_answer.lower())
+        match = re.search(r'The final answer is: (\w+)', generated_answer)
         return match.group(1) if match else None
 
     def score(self, ground_truth, generated_answer):
@@ -251,7 +251,7 @@ class AquaRat(Dataset):
             if ground_truth.lower() == generated_answer.lower():
                 return 1.0
             generated_answer = self.extract_final_answer(generated_answer)
-            return 1.0 if generated_answer == ground_truth.lower() else -1.0
+            return 1.0 if generated_answer == ground_truth else -1.0
         except Exception as e:
             logger.error(f"Error in scoring: {e}")
             return -1.0
