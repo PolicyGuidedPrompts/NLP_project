@@ -75,7 +75,9 @@ class Phi2LLM(LLMModel):
                 temperature=self.temperature,
             ).cpu()
 
-        generated_answer = self.tokenizer.batch_decode(output)[0]
+        generated_answer = self.tokenizer.decode(
+            output[:, input_ids.shape[-1] :][0], skip_special_tokens=True
+        )
         return generated_answer.strip()
 
 
