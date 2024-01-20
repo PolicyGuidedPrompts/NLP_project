@@ -82,3 +82,7 @@ wandb/
 dataset_encodings/
 ```
 
+#vscode
+.vscode/
+```
+

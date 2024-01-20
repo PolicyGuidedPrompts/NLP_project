@@ -9,7 +9,7 @@ import ast
 from sklearn.model_selection import train_test_split
 from datasets import load_dataset
 
-logger = logging.getLogger('root')
+logger = logging.getLogger("root")
 
 
 class Dataset(ABC):
@@ -66,12 +66,12 @@ class Dataset(ABC):
 
     @property
     def dataset_path(self):
-        if hasattr(self, 'repository'):
-            return os.path.join(self.repository, self.dataset_name)
+        if hasattr(self, "repository"):
+            return self.repository + "/" + self.dataset_name
         return self.dataset_name
 
     def prepare_dataset_to_retriever(self):
-        return self.train_data['question'].to_numpy()
+        return self.train_data["question"].to_numpy()
 
     @abstractmethod
     def load_from_repository(self):
@@ -90,35 +90,46 @@ class StrategyQaDataset(Dataset):
     repository = "wics"
     dataset_name = "strategy-qa"
 
-    prompt_prefix = "See the questions and answers below and " \
-                    "answer the last question in the same fashion base on the facts.\n"
+    prompt_prefix = (
+        "See the questions and answers below and "
+        "answer the last question in the same fashion base on the facts.\n"
+    )
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from {self.repository}")
-        df = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["test"].to_pandas()[
-            ["question", "answer", "facts"]].assign(answer=lambda x: x['answer'].astype(str))
-        df['facts'] = df['facts'].astype(str).apply(lambda x: ''.join(ast.literal_eval(x)))
+        df = (
+            load_dataset(self.dataset_path, cache_dir=self.datasets_dir)["test"]
+            .to_pandas()[["question", "answer", "facts"]]
+            .assign(answer=lambda x: x["answer"].astype(str))
+        )
+        df["facts"] = (
+            df["facts"].astype(str).apply(lambda x: "".join(ast.literal_eval(x)))
+        )
 
         df_train, df_test = train_test_split(df, test_size=0.2, random_state=42)
         return df_train, df_test
 
     def reset(self, mode, index):
-        if mode == 'train':
+        if mode == "train":
             sample = self.train_data.sample(1).iloc[0]
         else:
             sample = self.test_data.iloc[index]
         question, ground_truth = sample["question"], sample["answer"]
-        initial_prompt = f'Question: {sample["question"]}\n' \
-                         f'Facts: {sample["facts"]}\n' \
-                         f'Answer: '
+        initial_prompt = (
+            f'Question: {sample["question"]}\n'
+            f'Facts: {sample["facts"]}\n'
+            f"Answer: "
+        )
         return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.train_data.iloc[action]
-        new_prompt = f'Question: {sample["question"]}\n' \
-                     f'Facts: {sample["facts"]}\n' \
-                     f'Answer: {sample["answer"]}\n' \
-                     f'{current_prompt}'
+        new_prompt = (
+            f'Question: {sample["question"]}\n'
+            f'Facts: {sample["facts"]}\n'
+            f'Answer: {sample["answer"]}\n'
+            f"{current_prompt}"
+        )
         return new_prompt
 
     def score(self, ground_truth, generated_answer):
@@ -141,35 +152,51 @@ class SquadDataset(Dataset):
         data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)
 
         df_train = data["train"].to_pandas()
-        df_train['answers'] = df_train['answers'].apply(lambda x: x['text'] if x else None)
+        df_train["answers"] = df_train["answers"].apply(
+            lambda x: x["text"] if x else None
+        )
 
         df_test = data["validation"].to_pandas()
-        df_test['answers'] = df_test['answers'].apply(lambda x: x['text'] if x else None)
+        df_test["answers"] = df_test["answers"].apply(
+            lambda x: x["text"] if x else None
+        )
 
-        return df_train[["question", "answers", "context"]], df_test[["question", "answers", "context"]]
+        return (
+            df_train[["question", "answers", "context"]],
+            df_test[["question", "answers", "context"]],
+        )
 
     def reset(self, mode, index):
-        if mode == 'train':
+        if mode == "train":
             sample = self.train_data.sample(1).iloc[0]
         else:
             sample = self.test_data.iloc[index]
         question, ground_truth = sample["question"], sample["answers"]
-        initial_prompt = f'Question: {sample["question"]}\n' \
-                         f'Context: {sample["context"]}\n' \
-                         f'Answer: '
+        initial_prompt = (
+            f'Question: {sample["question"]}\n'
+            f'Context: {sample["context"]}\n'
+            f"Answer: "
+        )
         return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.train_data.iloc[action]
-        new_prompt = f'Question: {sample["question"]}\n' \
-                     f'Context: {sample["context"]}\n' \
-                     f'Answer: {sample["answers"][0]}\n' \
-                     f'{current_prompt}'
+        new_prompt = (
+            f'Question: {sample["question"]}\n'
+            f'Context: {sample["context"]}\n'
+            f'Answer: {sample["answers"][0]}\n'
+            f"{current_prompt}"
+        )
         return new_prompt
 
     def score(self, ground_truths, generated_answer):
         try:
-            return max([self._f1_score(ground_truth, generated_answer) for ground_truth in ground_truths])
+            return max(
+                [
+                    self._f1_score(ground_truth, generated_answer)
+                    for ground_truth in ground_truths
+                ]
+            )
         except Exception as e:
             logger.error(f"Error in scoring: {e}")
             return -1.0
@@ -190,20 +217,21 @@ class OpenTDB(Dataset):
         return df_train, df_test
 
     def reset(self, mode, index):
-        if mode == 'train':
+        if mode == "train":
             sample = self.train_data.sample(1).iloc[0]
         else:
             sample = self.test_data.iloc[index]
         question, ground_truth = sample["question"], sample["answer"]
-        initial_prompt = f'Question: {sample["question"]}\n' \
-                         f'Answer: '
+        initial_prompt = f'Question: {sample["question"]}\n' f"Answer: "
         return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.train_data.iloc[action]
-        new_prompt = f'Question: {sample["question"]}\n' \
-                     f'Answer: {sample["answer"]}\n' \
-                     f'{current_prompt}'
+        new_prompt = (
+            f'Question: {sample["question"]}\n'
+            f'Answer: {sample["answer"]}\n'
+            f"{current_prompt}"
+        )
         return new_prompt
 
 
@@ -211,39 +239,43 @@ class AquaRat(Dataset):
     dataset_name = "aqua_rat"
     local_path_to_data_set = "../data/aqua_rat.csv"
 
-    prompt_prefix = "See the questions and answers below and answer the last question in the same fashion." \
-                    "The final answer should begin with: 'The final answer is: A/B/C/D/E'\n"
+    prompt_prefix = (
+        "See the questions and answers below and answer the last question in the same fashion."
+        "The final answer should begin with: 'The final answer is: A/B/C/D/E'\n"
+    )
 
     def load_from_repository(self):
         logger.info(f"Loading dataset {self.dataset_name} from local CSV")
         df = pd.read_csv(os.path.join(self.script_dir, self.local_path_to_data_set))
-        df['options'] = df['options'].apply(lambda x: '\n'.join(ast.literal_eval(x)))
+        df["options"] = df["options"].apply(lambda x: "\n".join(ast.literal_eval(x)))
         df_train, df_test = train_test_split(df, test_size=0.2, random_state=42)
         return df_train, df_test
 
     def reset(self, mode, index):
-        if mode == 'train':
+        if mode == "train":
             sample = self.train_data.sample(1).iloc[0]
         else:
             sample = self.test_data.iloc[index]
         question, ground_truth = sample["question"], sample["answer"]
-        initial_prompt = f'Question: {sample["question"]}\n' \
-                         f'{sample["options"]}\n' \
-                         f'Answer: '
+        initial_prompt = (
+            f'Question: {sample["question"]}\n' f'{sample["options"]}\n' f"Answer: "
+        )
         return question, initial_prompt, ground_truth
 
     def update_prompt(self, action, current_prompt):
         sample = self.train_data.iloc[action]
-        new_prompt = f'Question: {sample["question"]}\n' \
-                     f'{sample["options"]}\n' \
-                     f'Answer: {sample["rationale"]}\n' \
-                     f'The final answer is: {sample["answer"]}\n' \
-                     f'{current_prompt}'
+        new_prompt = (
+            f'Question: {sample["question"]}\n'
+            f'{sample["options"]}\n'
+            f'Answer: {sample["rationale"]}\n'
+            f'The final answer is: {sample["answer"]}\n'
+            f"{current_prompt}"
+        )
         return new_prompt
 
     @staticmethod
     def extract_final_answer(generated_answer):
-        match = re.search(r'The final answer is: (\w+)', generated_answer)
+        match = re.search(r"The final answer is: (\w+)", generated_answer)
         return match.group(1) if match else None
 
     def score(self, ground_truth, generated_answer):
@@ -262,10 +294,10 @@ class AquaRat(Dataset):
 
 
 AVAILABLE_DATASETS = {
-    'strategy-qa': StrategyQaDataset,
-    'squad': SquadDataset,
-    'open-tdb': OpenTDB,
-    'aqua-rat': AquaRat
+    "strategy-qa": StrategyQaDataset,
+    "squad": SquadDataset,
+    "open-tdb": OpenTDB,
+    "aqua-rat": AquaRat,
 }
 
 
