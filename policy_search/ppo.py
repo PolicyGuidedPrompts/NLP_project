@@ -8,15 +8,16 @@ from utils.network_utils import np2torch
 from policy_search.policy_gradient import PolicyGradient
 from policy_search.ppo_episode import PPOEpisode
 
-logger = logging.getLogger('root')
+logger = logging.getLogger("root")
 
 
 class PPO(PolicyGradient):
-
     def __init__(self, env, config):
         super(PPO, self).__init__(env, config)
 
-    def update_policy(self, observations, actions, advantages, old_logprobs, current_batch):
+    def update_policy(
+        self, observations, actions, advantages, old_logprobs, current_batch
+    ):
         """
         Args:
             observations: np array of shape [batch size, dim(observation space)]
@@ -38,7 +39,10 @@ class PPO(PolicyGradient):
         # Compute the ratio between new policy and old policy
         ratio = (new_logprobs - old_logprobs).exp()
 
-        clipped_advantage = torch.clamp(ratio, 1.0 - self.config.eps_clip, 1.0 + self.config.eps_clip) * advantages
+        clipped_advantage = (
+            torch.clamp(ratio, 1.0 - self.config.eps_clip, 1.0 + self.config.eps_clip)
+            * advantages
+        )
 
         loss = -torch.min(ratio * advantages, clipped_advantage).mean()
 
@@ -65,22 +69,35 @@ class PPO(PolicyGradient):
     def train(self):
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes(current_batch=t)
-            observations, actions, returns, advantages, batch_rewards, old_logprobs = self.merge_episodes_to_batch(
-                episodes)
+            (
+                observations,
+                actions,
+                returns,
+                advantages,
+                batch_rewards,
+                old_logprobs,
+            ) = self.merge_episodes_to_batch(episodes)
 
             for k in range(self.config.update_freq):
                 self.baseline_network.update_baseline(returns, observations)
-                self.update_policy(observations, actions, advantages, old_logprobs, current_batch=t)
+                self.update_policy(
+                    observations, actions, advantages, old_logprobs, current_batch=t
+                )
 
             avg_batch_reward = batch_rewards.mean()
             std_batch_reward = batch_rewards.std()
             msg = "[ITERATION {}]: Average reward: {:04.2f} +/- {:04.2f}".format(
-                t+1, avg_batch_reward, std_batch_reward
+                t + 1, avg_batch_reward, std_batch_reward
             )
             logger.info(msg)
 
             if self.config.run_name:
-                wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
+                wandb.log(
+                    {
+                        "avg_batch_reward": avg_batch_reward,
+                        "std_batch_reward": std_batch_reward,
+                    }
+                )
 
             # test logic
             if t % self.config.test_every == 0:
@@ -92,7 +109,9 @@ class PPO(PolicyGradient):
         done = False
 
         while not done:
-            action, old_logprob = self.policy.act(observation.reshape(1, -1), current_batch, return_log_prob=True)
+            action, old_logprob = self.policy.act(
+                observation.reshape(1, -1), current_batch, return_log_prob=True
+            )
             next_observation, reward, done = self.env.step(action.item())
             episode.add(observation, action.item(), reward, old_logprob.item())
             observation = next_observation

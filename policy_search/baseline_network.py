@@ -9,7 +9,7 @@ from torchsummary import summary
 
 from utils.utils import CaptureStdout
 
-logger = logging.getLogger('root')
+logger = logging.getLogger("root")
 
 
 class BaselineNetwork(nn.Module):
@@ -26,18 +26,20 @@ class BaselineNetwork(nn.Module):
             output_size=1,
             n_layers=self.config.n_layers,
             size=self.config.first_layer_size,
-            config=self.config
+            config=self.config,
         ).to(device)
 
         with CaptureStdout() as capture:
             summary(self.network, input_size=(self.observation_dim,))
 
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=self.lr)
-        logger.info(f"Baseline initialized with:"
-                    f"\n{capture.get_output()}"
-                    f"{self.optimizer=}"
-                    f"\n{self.observation_dim=}"
-                    f"\n{self.lr=}")
+        logger.info(
+            f"Baseline initialized with:"
+            f"\n{capture.get_output()}"
+            f"{self.optimizer=}"
+            f"\n{self.observation_dim=}"
+            f"\n{self.lr=}"
+        )
 
     def forward(self, observations):
         """

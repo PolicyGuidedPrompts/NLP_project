@@ -15,7 +15,7 @@ from torchsummary import summary
 
 from utils.utils import CaptureStdout
 
-logger = logging.getLogger('root')
+logger = logging.getLogger("root")
 
 
 class PolicyGradient(object):
@@ -31,7 +31,10 @@ class PolicyGradient(object):
 
         self.env = env
 
-        self.observation_dim, self.action_dim = self.env.observation_space, self.env.action_space
+        self.observation_dim, self.action_dim = (
+            self.env.observation_space,
+            self.env.action_space,
+        )
         self.lr = self.config.learning_rate
 
         self.init_policy()
@@ -42,12 +45,14 @@ class PolicyGradient(object):
         with CaptureStdout() as capture:
             summary(self.policy.network, input_size=(self.observation_dim,))
 
-        logger.info(f"Policy initialized with:"
-                    f"\n{capture.get_output()}"
-                    f"{self.optimizer=})"
-                    f"\n{self.observation_dim=}, "
-                    f"{self.action_dim=}, "
-                    f"{self.lr=}")
+        logger.info(
+            f"Policy initialized with:"
+            f"\n{capture.get_output()}"
+            f"{self.optimizer=})"
+            f"\n{self.observation_dim=}, "
+            f"{self.action_dim=}, "
+            f"{self.lr=}"
+        )
 
     def init_policy(self):
         self._network = build_mlp(
@@ -55,7 +60,7 @@ class PolicyGradient(object):
             output_size=self.action_dim,
             n_layers=self.config.n_layers,
             size=self.config.first_layer_size,
-            config=self.config
+            config=self.config,
         )
 
         self.policy = CategoricalPolicy(self._network, self.config).to(device)
@@ -76,7 +81,7 @@ class PolicyGradient(object):
         return episode
 
     def sample_test_episode(self, index):
-        observation = self.env.reset(mode='test', index=index)
+        observation = self.env.reset(mode="test", index=index)
         episode = Episode()
         done = False
 
@@ -149,7 +154,9 @@ class PolicyGradient(object):
             advantages: np array of shape [batch size]
         """
         if self.config.baseline:
-            advantages = self.baseline_network.calculate_advantage(returns, observations)
+            advantages = self.baseline_network.calculate_advantage(
+                returns, observations
+            )
         else:
             advantages = returns  # baseline is 0 in case of no baseline
 
@@ -197,19 +204,36 @@ class PolicyGradient(object):
         return observations, actions, returns, advantages, batch_rewards
 
     def _init_wandb(self):
-        fields_to_exclude = ['output_path', 'model_output', 'log_path', 'scores_output', 'plot_output', 'BASE_DIR',
-                             'dataset', 'seed']
+        fields_to_exclude = [
+            "output_path",
+            "model_output",
+            "log_path",
+            "scores_output",
+            "plot_output",
+            "BASE_DIR",
+            "dataset",
+            "seed",
+        ]
 
         wandb.init(
             project="NLP_project",
-            name=datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + f'-{self.config.run_name}',
-            config={k: v for k, v in vars(self.config).items() if k not in fields_to_exclude}
+            name=datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            + f"-{self.config.run_name}",
+            config={
+                k: v for k, v in vars(self.config).items() if k not in fields_to_exclude
+            },
         )
 
     def train(self):
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes(current_batch=t)
-            observations, actions, returns, advantages, batch_rewards = self.merge_episodes_to_batch(episodes)
+            (
+                observations,
+                actions,
+                returns,
+                advantages,
+                batch_rewards,
+            ) = self.merge_episodes_to_batch(episodes)
 
             if self.config.baseline:
                 self.baseline_network.update_baseline(returns, observations)
@@ -224,7 +248,12 @@ class PolicyGradient(object):
             logger.info(msg)
 
             if self.config.run_name:
-                wandb.log({"avg_batch_reward": avg_batch_reward, "std_batch_reward": std_batch_reward})
+                wandb.log(
+                    {
+                        "avg_batch_reward": avg_batch_reward,
+                        "std_batch_reward": std_batch_reward,
+                    }
+                )
 
             # test logic
             if t % self.config.test_every == 0:
@@ -241,11 +270,18 @@ class PolicyGradient(object):
             avg_test_reward = test_rewards_np.mean()
             std_test_reward = test_rewards_np.std()
 
-            msg = "Test average reward: {:04.2f} +/- {:04.2f}".format(avg_test_reward, std_test_reward)
+            msg = "Test average reward: {:04.2f} +/- {:04.2f}".format(
+                avg_test_reward, std_test_reward
+            )
             logger.info(msg)
 
             if self.config.run_name:
-                wandb.log({"avg_test_reward": avg_test_reward, "std_test_reward": std_test_reward})
+                wandb.log(
+                    {
+                        "avg_test_reward": avg_test_reward,
+                        "std_test_reward": std_test_reward,
+                    }
+                )
 
     @contextlib.contextmanager
     def wandb_context(self):

@@ -30,8 +30,8 @@ def get_logger(log_path):
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    logger = logging.getLogger('root')
-    logger.setLevel(os.environ.get('LOGLEVEL'))
+    logger = logging.getLogger("root")
+    logger.setLevel(os.environ.get("LOGLEVEL"))
 
     file_handler = logging.FileHandler(log_path)
     file_handler.setLevel(logging.DEBUG)
@@ -39,7 +39,7 @@ def get_logger(log_path):
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(formatter)
     stream_handler.setFormatter(formatter)
 

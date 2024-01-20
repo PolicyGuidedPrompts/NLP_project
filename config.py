@@ -12,7 +12,7 @@ class Config:
 
         # Dataset part
         self.dataset = namespace.dataset
-        self._dataset_name = self.dataset.replace('/', '-')
+        self._dataset_name = self.dataset.replace("/", "-")
 
         # LLM part
         self.llm_model = namespace.llm_model
@@ -55,23 +55,31 @@ class Config:
         # Construct paths relative to this directory
         baseline_str = f"_baseline={self.baseline}" if self.baseline else ""
 
-        first_level = f"dataset={self._dataset_name}_llm={self.llm_model}" \
-                      f"_retriever={self.retriever_model}_retriever_top_k={self.retriever_top_k}" \
-                      f"_algorithm={self.algorithm}" \
-                      f"_normalize_encoding_method={self.normalize_encoding_method}" \
-                      f"_policy_exploration_logic={self.policy_exploration_logic}" \
-                      f"_policy_instance_norm={self.policy_instance_norm}" \
-                      f"{baseline_str}"
-        second_level = f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}" \
-                       f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}" \
-                       f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}"
-        third_level = f"n_layers={self.n_layers}_learning_rate={self.learning_rate}" \
-                      f"_num_batches={self.num_batches}_num_episodes_per_batch={self.num_episodes_per_batch}" \
-                      f"_gamma={self.gamma}_initial_temperature={self.initial_temperature}" \
-                      f"_end_temperature={self.end_temperature}" \
-                      f"_exploration_decay_factor={self.exploration_decay_factor}"
+        first_level = (
+            f"dataset={self._dataset_name}_llm={self.llm_model}"
+            f"_retriever={self.retriever_model}_retriever_top_k={self.retriever_top_k}"
+            f"_algorithm={self.algorithm}"
+            f"_normalize_encoding_method={self.normalize_encoding_method}"
+            f"_policy_exploration_logic={self.policy_exploration_logic}"
+            f"_policy_instance_norm={self.policy_instance_norm}"
+            f"{baseline_str}"
+        )
+        second_level = (
+            f"llm_max_prompt_tokenized_len={self.llm_max_prompt_tokenized_len}"
+            f"_llm_max_output_tokenized_len={self.llm_max_output_tokenized_len}"
+            f"_llm_temperature={self.llm_temperature}_eps_clip={self.eps_clip}"
+        )
+        third_level = (
+            f"n_layers={self.n_layers}_learning_rate={self.learning_rate}"
+            f"_num_batches={self.num_batches}_num_episodes_per_batch={self.num_episodes_per_batch}"
+            f"_gamma={self.gamma}_initial_temperature={self.initial_temperature}"
+            f"_end_temperature={self.end_temperature}"
+            f"_exploration_decay_factor={self.exploration_decay_factor}"
+        )
 
-        rel_output_path = os.path.join("results", first_level, second_level, third_level)
+        rel_output_path = os.path.join(
+            "results", first_level, second_level, third_level
+        )
         self.output_path = os.path.join(self.BASE_DIR, rel_output_path)
 
         self.model_output = os.path.join(self.output_path, "model.weights")

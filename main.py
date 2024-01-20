@@ -22,6 +22,7 @@ from utils.utils import get_logger
 # TODO - in build_mlp the size is actually first_layer_size
 # TODO - make sure we load the entire dataset and not a subset of it
 
+
 def set_seeds(seed):
     torch.random.manual_seed(seed)
     np.random.seed(seed)
@@ -39,7 +40,9 @@ if __name__ == "__main__":
 
     dataset = DatasetFactory.create_dataset(dataset_name=namespace.dataset)
     llm = LLMFactory.create_llm(model_name=namespace.llm_model, config=config)
-    retriever = RetrieverFactory.create_retriever(model_name=namespace.retriever_model, config=config, dataset=dataset)
+    retriever = RetrieverFactory.create_retriever(
+        model_name=namespace.retriever_model, config=config, dataset=dataset
+    )
 
     env = Environment(
         dataset=dataset,
@@ -48,7 +51,7 @@ if __name__ == "__main__":
         seed=namespace.seed,
     )
 
-    if namespace.algorithm == 'ppo':
+    if namespace.algorithm == "ppo":
         policy_search_algorithm = PPO(env, config)
     else:
         policy_search_algorithm = PolicyGradient(env, config)
