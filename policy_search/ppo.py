@@ -100,8 +100,8 @@ class PPO(PolicyGradient):
                 )
 
             # test logic
-            if t % self.config.test_every == 0:
-                self.evaluate()
+            # if t % self.config.test_every == 0:
+            #     self.evaluate()
 
     def sample_episode(self, current_batch):
         observation = self.env.reset()

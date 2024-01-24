@@ -247,7 +247,7 @@ AVAILABLE_LLM_MODELS = {
     "flan-t5-large": FlanT5LargeLLM,
     "flan-t5-xl": FlanT5XLLLM,
     "flan-t5-xxl": FlanT5XXLLLM,
-    "llama-2-70b": Llama2LLM,
+    "llama-2-7b": Llama2LLM,
     "phi-2": Phi2LLM,
 }
 

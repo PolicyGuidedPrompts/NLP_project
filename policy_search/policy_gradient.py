@@ -256,8 +256,8 @@ class PolicyGradient(object):
                 )
 
             # test logic
-            if t % self.config.test_every == 0:
-                self.evaluate()
+            # if t % self.config.test_every == 0:
+            #     self.evaluate()
 
     def evaluate(self):
         with torch.no_grad():

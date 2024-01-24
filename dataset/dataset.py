@@ -289,6 +289,59 @@ class PAWSDataset(Dataset):
             return -1.0
 
 
+class GlueMNLIDataset(Dataset):
+    dataset_name = "glue"
+
+    prompt_prefix = (
+        "Below are sentences which one sentence can entail/neutral/contradicts the other. "
+        "Answer the last two sentences with resect to given examples.\n"
+    )
+
+    def load_from_repository(self):
+        logger.info(f"Loading dataset {self.dataset_name}")
+        data = load_dataset(self.dataset_path, "mnli", cache_dir=self.datasets_dir)
+
+        df_train = data["train"].to_pandas()[:1000]
+        df_test = data["test_matched"].to_pandas()[:1000]
+
+        label_map = {0: 'Entailment', 1: 'Neutral', 2: 'Contradiction'}
+        df_train['label'] = df_train['label'].map(label_map)
+        df_test['label'] = df_test['label'].map(label_map)
+
+        return df_train, df_test
+
+    def reset(self, mode, index):
+        if mode == "train":
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
+        question, ground_truth = f"Premise: {sample['premise']}\nHypothesis: {sample['hypothesis']}", sample["label"]
+        initial_prompt = f"Premise: {sample['premise']}\nHypothesis: {sample['hypothesis']}\nNLI Verdict: "
+        return question, initial_prompt, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.train_data.iloc[action]
+        new_prompt = (
+            f"Premise: {sample['premise']}\n"
+            f"Hypothesis: {sample['hypothesis']}\n"
+            f"NLI Verdict: {sample['label']}\n"
+            f"{current_prompt}"
+        )
+        return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        retriever_data = self.train_data.apply(
+            lambda row: f"Premise: {row['premise']}\nHypothesis: {row['hypothesis']}", axis=1)
+        return retriever_data.to_numpy()
+
+    def score(self, ground_truth, generated_answer):
+        try:
+            return 1.0 if generated_answer.lower().strip() == ground_truth.lower().strip() else -1.0
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1.0
+
+
 class AquaRat(Dataset):
     dataset_name = "aqua_rat"
     local_path_to_data_set = "../data/aqua_rat.csv"
@@ -352,7 +405,8 @@ AVAILABLE_DATASETS = {
     "squad": SquadDataset,
     "open-tdb": OpenTDB,
     "aqua-rat": AquaRat,
-    "paws": PAWSDataset
+    "paws": PAWSDataset,
+    "glue-mnli": GlueMNLIDataset
 }
 
 
