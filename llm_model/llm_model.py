@@ -183,6 +183,10 @@ class FlanT5XLLLM(BaseFlanT5LLM):
     model_name = "flan-t5-xl"
 
 
+class FlanT5XXLLLM(BaseFlanT5LLM):
+    model_name = "flan-t5-xxl"
+
+
 class Llama2LLM(LLMModel):
     model_name = "Llama-2-7b-chat-hf"
     repository = "meta-llama"
@@ -242,7 +246,8 @@ AVAILABLE_LLM_MODELS = {
     "flan-t5-base": FlanT5BaseLLM,
     "flan-t5-large": FlanT5LargeLLM,
     "flan-t5-xl": FlanT5XLLLM,
-    "llama-2-7b": Llama2LLM,
+    "flan-t5-xxl": FlanT5XXLLLM,
+    "llama-2-70b": Llama2LLM,
     "phi-2": Phi2LLM,
 }
 
