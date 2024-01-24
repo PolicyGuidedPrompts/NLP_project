@@ -235,6 +235,60 @@ class OpenTDB(Dataset):
         return new_prompt
 
 
+class PAWSDataset(Dataset):
+    dataset_name = "paws"
+
+    prompt_prefix = (
+        "Below are sentences which one sentence can be a paraphrase of the other. "
+        "Answer the last two sentences with resect to given examples.\n"
+    )
+
+    def load_from_repository(self):
+        logger.info(f"Loading dataset {self.dataset_name}")
+        data = load_dataset(self.dataset_path, "labeled_final", cache_dir=self.datasets_dir)
+
+        df_train = data["train"].to_pandas()
+        df_validation = data["validation"].to_pandas()
+
+        label_map = {0: 'No', 1: 'Yes'}
+        df_train['label'] = df_train['label'].map(label_map)
+        df_validation['label'] = df_validation['label'].map(label_map)
+
+        return df_train, df_validation
+
+    def reset(self, mode, index):
+        if mode == "train":
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
+        question, ground_truth = f"Sentence 1: {sample['sentence1']}\nSentence 2: {sample['sentence2']}", sample[
+            "label"]
+        initial_prompt = f"Sentence 1: {sample['sentence1']}\nSentence 2: {sample['sentence2']}\nIs Paraphrase? "
+        return question, initial_prompt, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.train_data.iloc[action]
+        new_prompt = (
+            f"Sentence 1: {sample['sentence1']}\n"
+            f"Sentence 2: {sample['sentence2']}\n"
+            f"Is Paraphrase? {sample['label']}\n"
+            f"{current_prompt}"
+        )
+        return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        retriever_data = self.train_data.apply(
+            lambda row: f"Sentence 1: {row['sentence1']}\nSentence 2: {row['sentence2']}", axis=1)
+        return retriever_data.to_numpy()
+
+    def score(self, ground_truth, generated_answer):
+        try:
+            return 1.0 if generated_answer.lower().strip() == ground_truth.lower().strip() else -1.0
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1.0
+
+
 class AquaRat(Dataset):
     dataset_name = "aqua_rat"
     local_path_to_data_set = "../data/aqua_rat.csv"
@@ -298,6 +352,7 @@ AVAILABLE_DATASETS = {
     "squad": SquadDataset,
     "open-tdb": OpenTDB,
     "aqua-rat": AquaRat,
+    "paws": PAWSDataset
 }
 
 
