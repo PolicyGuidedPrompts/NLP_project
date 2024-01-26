@@ -301,8 +301,8 @@ class GlueMNLIDataset(Dataset):
         logger.info(f"Loading dataset {self.dataset_name}")
         data = load_dataset(self.dataset_path, "mnli", cache_dir=self.datasets_dir)
 
-        df_train = data["train"].to_pandas()[:1000]
-        df_test = data["test_matched"].to_pandas()[:1000]
+        df_train = data["train"].to_pandas()
+        df_test = data["test_matched"].to_pandas()
 
         label_map = {0: 'Entailment', 1: 'Neutral', 2: 'Contradiction'}
         df_train['label'] = df_train['label'].map(label_map)
