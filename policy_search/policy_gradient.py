@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 import torch
 import wandb
+import random
 
 from policy_search.baseline_network import BaselineNetwork
 from utils.network_utils import build_mlp, device, np2torch
@@ -71,10 +72,17 @@ class PolicyGradient(object):
         observation = self.env.reset()
         episode = Episode()
 
-        for action in range(3, -1, -1):
+        dataset_length = len(self.env.dataset.train_data)
+
+        for _ in range(3):
+            action = random.randint(0, dataset_length - 1)
             next_observation, reward, _ = self.env.step(action)
             episode.add(observation, action, reward)
             observation = next_observation
+
+        action = 0
+        next_observation, reward, _ = self.env.step(action)
+        episode.add(observation, action, reward)
 
         return episode
 
