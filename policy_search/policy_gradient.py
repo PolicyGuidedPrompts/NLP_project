@@ -71,9 +71,10 @@ class PolicyGradient(object):
         observation = self.env.reset()
         episode = Episode()
 
-        action = 0
-        next_observation, reward, _ = self.env.step(action)
-        episode.add(observation, action, reward)
+        for action in range(3, -1, -1):
+            next_observation, reward, _ = self.env.step(action)
+            episode.add(observation, action, reward)
+            observation = next_observation
 
         return episode
 
@@ -215,7 +216,7 @@ class PolicyGradient(object):
         wandb.init(
             project="NLP_project",
             name=datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            + f"-{self.config.run_name}",
+                 + f"-{self.config.run_name}",
             config={
                 k: v for k, v in vars(self.config).items() if k not in fields_to_exclude
             },
