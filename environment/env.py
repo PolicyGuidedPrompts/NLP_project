@@ -40,7 +40,7 @@ class Environment:
         if action == self.terminate_action:
             done = True
         else:
-            index_given_action = self.top_k_closest_questions_indices[action - 1]
+            index_given_action = action
             self.context_prompt = self.dataset.update_prompt(
                 index_given_action, self.context_prompt
             )
