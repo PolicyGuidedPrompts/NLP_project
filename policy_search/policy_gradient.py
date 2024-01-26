@@ -70,13 +70,15 @@ class PolicyGradient(object):
     def sample_episode(self, current_batch):
         observation = self.env.reset()
         episode = Episode()
-        done = False
 
-        while not done:
-            action, _ = self.policy.act(observation.reshape(1, -1), current_batch)
-            next_observation, reward, done = self.env.step(action.item())
-            episode.add(observation, action.item(), reward)
-            observation = next_observation
+        action = 1
+        next_observation, reward, _ = self.env.step(action)
+        episode.add(observation, action, reward)
+        observation = next_observation
+
+        action = 0
+        next_observation, reward, _ = self.env.step(action)
+        episode.add(observation, action, reward)
 
         return episode
 
@@ -228,17 +230,12 @@ class PolicyGradient(object):
         for t in range(self.config.num_batches):
             episodes = self.sample_episodes(current_batch=t)
             (
-                observations,
-                actions,
-                returns,
-                advantages,
+                _,
+                _,
+                _,
+                _,
                 batch_rewards,
             ) = self.merge_episodes_to_batch(episodes)
-
-            if self.config.baseline:
-                self.baseline_network.update_baseline(returns, observations)
-
-            self.update_policy(observations, actions, advantages, current_batch=t)
 
             avg_batch_reward = batch_rewards.mean()
             std_batch_reward = batch_rewards.std()
