@@ -76,13 +76,9 @@ class PolicyGradient(object):
 
         for _ in range(3):
             action = random.randint(0, dataset_length - 1)
-            next_observation, reward, _ = self.env.step(action)
+            next_observation, reward, done = self.env.step(action.item(),done=i==2)
             episode.add(observation, action, reward)
             observation = next_observation
-
-        action = 0
-        next_observation, reward, _ = self.env.step(action)
-        episode.add(observation, action, reward)
 
         return episode
 

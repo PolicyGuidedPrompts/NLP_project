@@ -10,13 +10,12 @@ class Environment:
         self.dataset = dataset
         self.retriever = retriever
         self.llm = llm
-        self.terminate_action = terminate_action
+        self.terminate_action = -1
 
-        # +1 for terminate action
         self.action_space = (
-            self.retriever.top_k + 1
+            self.retriever.top_k
             if hasattr(self.retriever, "top_k")
-            else len(dataset.train_data) + 1
+            else len(dataset.train_data)
         )
 
         # Define observation space based on a sample observation
@@ -36,18 +35,9 @@ class Environment:
             f"{self.retriever.model_name=}"
         )
 
-    def step(self, action):
-        if action == self.terminate_action:
-            done = True
-        else:
-            index_given_action = action
-            self.context_prompt = self.dataset.update_prompt(
-                index_given_action, self.context_prompt
-            )
-            done = self.llm.is_prompt_too_long(
-                f"{self.dataset.prompt_prefix}{self.context_prompt}"
-                f"{self.initial_prompt}"
-            )
+    def step(self, action, done):
+        index_given_action = self.top_k_closest_questions_indices[action]
+        self.context_prompt = self.dataset.update_prompt(index_given_action, self.context_prompt)
 
         if done:
             reward = self.evaluate_prompt()
