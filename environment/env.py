@@ -36,18 +36,11 @@ class Environment:
             f"{self.retriever.model_name=}"
         )
 
-    def step(self, action):
-        if action == self.terminate_action:
-            done = True
-        else:
-            index_given_action = self.top_k_closest_questions_indices[action - 1]
-            self.context_prompt = self.dataset.update_prompt(
-                index_given_action, self.context_prompt
-            )
-            done = self.llm.is_prompt_too_long(
-                f"{self.dataset.prompt_prefix}{self.context_prompt}"
-                f"{self.initial_prompt}"
-            )
+    def step(self, action, done):
+        index_given_action = self.top_k_closest_questions_indices[action - 1]
+        self.context_prompt = self.dataset.update_prompt(
+            index_given_action, self.context_prompt
+        )
 
         if done:
             reward = self.evaluate_prompt()
