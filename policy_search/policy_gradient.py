@@ -71,6 +71,7 @@ class PolicyGradient(object):
         observation = self.env.reset()
         episode = Episode()
 
+
         for i in range(3):
             action, _ = self.policy.act(observation.reshape(1, -1), current_batch)
             next_observation, reward, done = self.env.step(action.item(),done=i==2)
