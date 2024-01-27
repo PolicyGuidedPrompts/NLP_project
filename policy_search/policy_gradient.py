@@ -74,9 +74,9 @@ class PolicyGradient(object):
 
         dataset_length = len(self.env.dataset.train_data)
 
-        for _ in range(3):
+        for i in range(3):
             action = random.randint(0, dataset_length - 1)
-            next_observation, reward, done = self.env.step(action.item(),done=i==2)
+            next_observation, reward, done = self.env.step(action, done=i == 2)
             episode.add(observation, action, reward)
             observation = next_observation
 
