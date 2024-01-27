@@ -70,11 +70,10 @@ class PolicyGradient(object):
     def sample_episode(self, current_batch):
         observation = self.env.reset()
         episode = Episode()
-        done = False
 
-        while not done:
+        for i in range(3):
             action, _ = self.policy.act(observation.reshape(1, -1), current_batch)
-            next_observation, reward, done = self.env.step(action.item())
+            next_observation, reward, done = self.env.step(action.item(),done=i==2)
             episode.add(observation, action.item(), reward)
             observation = next_observation
 
