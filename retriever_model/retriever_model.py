@@ -59,7 +59,7 @@ class SBertRetriever(RetrieverModel):
         self.cache_dir = os.path.join(
             RetrieverModel.script_dir, f"../dataset_encodings/{self.model_name}"
         )
-        self.cache_file = os.path.join(self.cache_dir, f"{dataset.dataset_name}.pt")
+        self.cache_file = os.path.join(self.cache_dir, f"{dataset.dataset_name}_{dataset.task_name}.pt")
 
         if os.path.exists(self.cache_file):
             self.dataset_embeddings = torch.load(self.cache_file)

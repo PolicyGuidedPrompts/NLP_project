@@ -15,6 +15,7 @@ logger = logging.getLogger("root")
 class Dataset(ABC):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     datasets_dir = os.path.join(script_dir, "../saved_datasets")
+    task_name = ''
 
     prompt_prefix = "See the questions and answers below and answer the last question in the same fashion.\n"
 
