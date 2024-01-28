@@ -451,6 +451,7 @@ class GlueCoLADataset(Dataset):
             logger.error(f"Error in scoring: {e}")
             return -1.0
 
+
 class GlueMRPCDataset(Dataset):
     dataset_name = "glue"
     task_name = "mrpc"
@@ -497,6 +498,62 @@ class GlueMRPCDataset(Dataset):
     def prepare_dataset_to_retriever(self):
         retriever_data = self.train_data.apply(
             lambda row: f"Sentence 1: {row['sentence1']}\nSentence 2: {row['sentence2']}", axis=1)
+        return retriever_data.to_numpy()
+
+    def score(self, ground_truth, generated_answer):
+        try:
+            return 1.0 if generated_answer.lower().strip() == ground_truth.lower().strip() else -1.0
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1.0
+
+
+class QuoraDataset(Dataset):
+    dataset_name = "quora"
+
+    prompt_prefix = (
+        "Below are pairs of questions. Determine if the questions are duplicates of each other. "
+        "Answer with either Duplicate/Not Duplicate. "
+        "Answer the last pair of questions with respect to the given examples.\n"
+    )
+
+    def load_from_repository(self):
+        logger.info(f"Loading dataset {self.dataset_name}")
+        data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)
+
+        df_train = data["train"].to_pandas()[:1000]
+
+        df_train['question1'] = df_train['questions'].apply(lambda x: x['text'][0])
+        df_train['question2'] = df_train['questions'].apply(lambda x: x['text'][1])
+
+        label_map = {False: 'Not Duplicate', True: 'Duplicate'}
+        df_train['is_duplicate'] = df_train['is_duplicate'].map(label_map)
+
+        return df_train, []
+
+    def reset(self, mode, index):
+        if mode == "train":
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
+        question = f"Question 1: {sample['question1']}\nQuestion 2: {sample['question2']}"
+        ground_truth = sample["is_duplicate"]
+        initial_prompt = f"Question 1: {sample['question1']}\nQuestion 2: {sample['question2']}\nDuplicate Verdict: "
+        return question, initial_prompt, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.train_data.iloc[action]
+        new_prompt = (
+            f"Question 1: {sample['question1']}\n"
+            f"Question 2: {sample['question2']}\n"
+            f"Duplicate Verdict: {sample['is_duplicate']}\n"
+            f"{current_prompt}"
+        )
+        return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        retriever_data = self.train_data.apply(
+            lambda row: f"Question 1: {row['question1']}\nQuestion 2: {row['question2']}", axis=1)
         return retriever_data.to_numpy()
 
     def score(self, ground_truth, generated_answer):
@@ -574,7 +631,8 @@ AVAILABLE_DATASETS = {
     "glue-mnli": GlueMNLIDataset,
     "glue-rte": GlueRTEDataset,
     "glue-cola": GlueCoLADataset,
-    "glue-mrpc": GlueMRPCDataset
+    "glue-mrpc": GlueMRPCDataset,
+    "quora": QuoraDataset,
 }
 
 
