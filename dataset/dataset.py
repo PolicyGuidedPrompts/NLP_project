@@ -248,13 +248,13 @@ class PAWSDataset(Dataset):
         data = load_dataset(self.dataset_path, "labeled_final", cache_dir=self.datasets_dir)
 
         df_train = data["train"].to_pandas()
-        df_validation = data["validation"].to_pandas()
+        df_test = data["test"].to_pandas()
 
         label_map = {0: 'No', 1: 'Yes'}
         df_train['label'] = df_train['label'].map(label_map)
-        df_validation['label'] = df_validation['label'].map(label_map)
+        df_test['label'] = df_test['label'].map(label_map)
 
-        return df_train, df_validation
+        return df_train, df_test
 
     def reset(self, mode, index):
         if mode == "train":
@@ -291,6 +291,7 @@ class PAWSDataset(Dataset):
 
 class GlueMNLIDataset(Dataset):
     dataset_name = "glue"
+    task_name = "mnli"
 
     prompt_prefix = (
         "Below are sentences which one sentence can entail/neutral/contradicts the other. "
@@ -298,8 +299,8 @@ class GlueMNLIDataset(Dataset):
     )
 
     def load_from_repository(self):
-        logger.info(f"Loading dataset {self.dataset_name}")
-        data = load_dataset(self.dataset_path, "mnli", cache_dir=self.datasets_dir)
+        logger.info(f"Loading dataset {self.dataset_name} for task {self.task_name}")
+        data = load_dataset(self.dataset_path, self.task_name, cache_dir=self.datasets_dir)
 
         df_train = data["train"].to_pandas()
         df_test = data["test_matched"].to_pandas()
@@ -332,6 +333,169 @@ class GlueMNLIDataset(Dataset):
     def prepare_dataset_to_retriever(self):
         retriever_data = self.train_data.apply(
             lambda row: f"Premise: {row['premise']}\nHypothesis: {row['hypothesis']}", axis=1)
+        return retriever_data.to_numpy()
+
+    def score(self, ground_truth, generated_answer):
+        try:
+            return 1.0 if generated_answer.lower().strip() == ground_truth.lower().strip() else -1.0
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1.0
+
+
+class GlueRTEDataset(Dataset):
+    dataset_name = "glue"
+    task_name = "rte"
+
+    prompt_prefix = (
+        "Below are pairs of sentences. Determine if the hypothesis is entailed by the premise. "
+        "Answer with either Not Entailment/Entailment. "
+        "Answer the last pair of sentences with respect to the given examples.\n"
+    )
+
+    def load_from_repository(self):
+        logger.info(f"Loading dataset {self.dataset_name} for task {self.task_name}")
+        data = load_dataset(self.dataset_path, self.task_name, cache_dir=self.datasets_dir)
+
+        df_train = data["train"].to_pandas()
+        df_test = data["test"].to_pandas()
+
+        label_map = {1: 'Not Entailment', 0: 'Entailment'}
+        df_train['label'] = df_train['label'].map(label_map)
+        df_test['label'] = df_test['label'].map(label_map)
+
+        return df_train, df_test
+
+    def reset(self, mode, index):
+        if mode == "train":
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
+        question, ground_truth = f"Premise: {sample['sentence1']}\nHypothesis: {sample['sentence2']}", sample["label"]
+        initial_prompt = f"Premise: {sample['sentence1']}\nHypothesis: {sample['sentence2']}\nNLI Verdict: "
+        return question, initial_prompt, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.train_data.iloc[action]
+        new_prompt = (
+            f"Premise: {sample['sentence1']}\n"
+            f"Hypothesis: {sample['sentence2']}\n"
+            f"NLI Verdict: {sample['label']}\n"
+            f"{current_prompt}"
+        )
+        return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        retriever_data = self.train_data.apply(
+            lambda row: f"Premise: {row['sentence1']}\nHypothesis: {row['sentence2']}", axis=1)
+        return retriever_data.to_numpy()
+
+    def score(self, ground_truth, generated_answer):
+        try:
+            return 1.0 if generated_answer.lower().strip() == ground_truth.lower().strip() else -1.0
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1.0
+
+
+class GlueCoLADataset(Dataset):
+    dataset_name = "glue"
+    task_name = "cola"
+
+    prompt_prefix = (
+        "Below are sentences. Determine if each sentence is grammatically acceptable. "
+        "Answer with either Acceptable/Unacceptable. "
+        "Answer the last sentence with respect to the given examples.\n"
+    )
+
+    def load_from_repository(self):
+        logger.info(f"Loading dataset {self.dataset_name} for task {self.task_name}")
+        data = load_dataset(self.dataset_path, self.task_name, cache_dir=self.datasets_dir)
+
+        df_train = data["train"].to_pandas()
+        df_test = data["test"].to_pandas()
+
+        label_map = {1: 'Acceptable', 0: 'Unacceptable'}
+        df_train['label'] = df_train['label'].map(label_map)
+        df_test['label'] = df_test['label'].map(label_map)
+
+        return df_train, df_test
+
+    def reset(self, mode, index):
+        if mode == "train":
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
+        question, ground_truth = sample['sentence'], sample["label"]
+        initial_prompt = f"Sentence: {sample['sentence']}\nGrammar Verdict: "
+        return question, initial_prompt, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.train_data.iloc[action]
+        new_prompt = (
+            f"Sentence: {sample['sentence']}\n"
+            f"Grammar Verdict: {sample['label']}\n"
+            f"{current_prompt}"
+        )
+        return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        retriever_data = self.train_data['sentence'].to_numpy()
+        return retriever_data
+
+    def score(self, ground_truth, generated_answer):
+        try:
+            return 1.0 if generated_answer.lower().strip() == ground_truth.lower().strip() else -1.0
+        except Exception as e:
+            logger.error(f"Error in scoring: {e}")
+            return -1.0
+
+class GlueMRPCDataset(Dataset):
+    dataset_name = "glue"
+    task_name = "mrpc"
+
+    prompt_prefix = (
+        "Below are pairs of sentences. Determine if the sentences are equivalent in meaning. "
+        "Answer with either Equivalent/Not Equivalent. "
+        "Answer the last pair of sentences with respect to the given examples.\n"
+    )
+
+    def load_from_repository(self):
+        logger.info(f"Loading dataset {self.dataset_name} for task {self.task_name}")
+        data = load_dataset(self.dataset_path, self.task_name, cache_dir=self.datasets_dir)
+
+        df_train = data["train"].to_pandas()
+        df_test = data["test"].to_pandas()
+
+        label_map = {1: 'Equivalent', 0: 'Not Equivalent'}
+        df_train['label'] = df_train['label'].map(label_map)
+        df_test['label'] = df_test['label'].map(label_map)
+
+        return df_train, df_test
+
+    def reset(self, mode, index):
+        if mode == "train":
+            sample = self.train_data.sample(1).iloc[0]
+        else:
+            sample = self.test_data.iloc[index]
+        question = f"Sentence 1: {sample['sentence1']}\nSentence 2: {sample['sentence2']}"
+        ground_truth = sample["label"]
+        initial_prompt = f"Sentence 1: {sample['sentence1']}\nSentence 2: {sample['sentence2']}\nParaphrase Verdict: "
+        return question, initial_prompt, ground_truth
+
+    def update_prompt(self, action, current_prompt):
+        sample = self.train_data.iloc[action]
+        new_prompt = (
+            f"Sentence 1: {sample['sentence1']}\n"
+            f"Sentence 2: {sample['sentence2']}\n"
+            f"Paraphrase Verdict: {sample['label']}\n"
+            f"{current_prompt}"
+        )
+        return new_prompt
+
+    def prepare_dataset_to_retriever(self):
+        retriever_data = self.train_data.apply(
+            lambda row: f"Sentence 1: {row['sentence1']}\nSentence 2: {row['sentence2']}", axis=1)
         return retriever_data.to_numpy()
 
     def score(self, ground_truth, generated_answer):
@@ -406,7 +570,10 @@ AVAILABLE_DATASETS = {
     "open-tdb": OpenTDB,
     "aqua-rat": AquaRat,
     "paws": PAWSDataset,
-    "glue-mnli": GlueMNLIDataset
+    "glue-mnli": GlueMNLIDataset,
+    "glue-rte": GlueRTEDataset,
+    "glue-cola": GlueCoLADataset,
+    "glue-mrpc": GlueMRPCDataset
 }
 
 
