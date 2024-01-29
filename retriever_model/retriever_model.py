@@ -53,22 +53,12 @@ class SBertRetriever(RetrieverModel):
         self.model = SentenceTransformer(
             self.model_path, cache_folder=self.models_dir
         ).to(device)
-        dataset_to_retriever = dataset.prepare_dataset_to_retriever()
         self.top_k = config.retriever_top_k
 
         self.cache_dir = os.path.join(
             RetrieverModel.script_dir, f"../dataset_encodings/{self.model_name}"
         )
         self.cache_file = os.path.join(self.cache_dir, f"{dataset.dataset_name}_{dataset.task_name}.pt")
-
-        if os.path.exists(self.cache_file):
-            self.dataset_embeddings = torch.load(self.cache_file)
-        else:
-            self.dataset_embeddings = self.model.encode(dataset_to_retriever)
-
-            if not os.path.exists(self.cache_dir):
-                os.makedirs(self.cache_dir)
-            torch.save(self.dataset_embeddings, self.cache_file)
 
     def encode(self, encoder_input):
         encoding = (
@@ -82,7 +72,7 @@ class SBertRetriever(RetrieverModel):
     def retrieve(self, encoding, mode):
         encoding_tensor = util.normalize_embeddings(np2torch(encoding.reshape(1, -1)))
         corpus_embeddings_tensor = util.normalize_embeddings(
-            np2torch(self.dataset_embeddings)
+            np2torch([])
         )
 
         if mode == "train":
