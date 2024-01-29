@@ -521,7 +521,7 @@ class QuoraDataset(Dataset):
         logger.info(f"Loading dataset {self.dataset_name}")
         data = load_dataset(self.dataset_path, cache_dir=self.datasets_dir)
 
-        df_train = data["train"].to_pandas()[:1000]
+        df_train = data["train"].to_pandas()
 
         df_train['question1'] = df_train['questions'].apply(lambda x: x['text'][0])
         df_train['question2'] = df_train['questions'].apply(lambda x: x['text'][1])
